@@ -164,7 +164,8 @@ int main(int argv, char* args[]) {
         break;
       }
 
-      if (assmThread.currentAction() == solveThread_c::ACT_ERROR) {
+      if (assmThread.currentAction() == solveThread_c::ACT_ERROR ||
+          assmThread.currentAction() == solveThread_c::ACT_ASSERT) {
         cout << "Exception in Solver\n";
         cout << " file      : " << assmThread.getAssertException().file;
         cout << " function  : " << assmThread.getAssertException().function;
