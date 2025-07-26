@@ -149,7 +149,7 @@ int main(int argv, char* args[]) {
         assmThread.currentAction() != solveThread_c::ACT_ERROR) {
 
       if (checkInput()) {
-        cout << "abborting \n";
+        cout << "aborting\n";
         assmThread.stop();
 
         while (assmThread.currentAction() != solveThread_c::ACT_FINISHED &&
@@ -167,10 +167,10 @@ int main(int argv, char* args[]) {
       if (assmThread.currentAction() == solveThread_c::ACT_ERROR ||
           assmThread.currentAction() == solveThread_c::ACT_ASSERT) {
         cout << "Exception in Solver\n";
-        cout << " file      : " << assmThread.getAssertException().file;
-        cout << " function  : " << assmThread.getAssertException().function;
-        cout << " line      : " << assmThread.getAssertException().line;
-        cout << " expression: " << assmThread.getAssertException().expr;
+        cout << " file      : " << assmThread.getAssertException().file << "\n";
+        cout << " function  : " << assmThread.getAssertException().function << "\n";
+        cout << " line      : " << assmThread.getAssertException().line << "\n";
+        cout << " expression: " << assmThread.getAssertException().expr << "\n";
         return 1;
       }
 
@@ -187,10 +187,10 @@ int main(int argv, char* args[]) {
           cout << "\rreducing piece " << assmThread.currentActionParameter()+1;
           break;
         case solveThread_c::ACT_ASSEMBLING:
-          cout << "\rassembling " << finished*100 << "% done";
+          cout << "\rassembling " << finished*100 << "% done\n";
           break;
         case solveThread_c::ACT_DISASSEMBLING:
-          cout << "\rdisassembling " << finished*100 << "% done";
+          cout << "\rdisassembling " << finished*100 << "% done\n";
           break;
         case solveThread_c::ACT_WAIT_TO_STOP:
           cout << "\rwaitin";
@@ -209,7 +209,7 @@ int main(int argv, char* args[]) {
               break;
             case assembler_c::ERR_CAN_NOT_RESTORE_VERSION:
               cout << "Impossible to restore the saved state because the internal format changed.\n";
-              cout << "You either have to start from the beginning or finish with the old version of BurrTools, sorry";
+              cout << "You either have to start from the beginning or finish with the old version of BurrTools, sorry\n";
               break;
             case assembler_c::ERR_CAN_NOT_RESTORE_SYNTAX:
               cout << "Impossible to restore the saved state because something with the data is wrong.\n";
@@ -217,14 +217,14 @@ int main(int argv, char* args[]) {
               break;
             case assembler_c::ERR_PUZZLE_UNHANDABLE:
               cout << "Something went wrong the program can not solve your puzzle definitions.\n";
-              cout << "You should send the puzzle file to the programmer!";
+              cout << "You should send the puzzle file to the programmer!\n";
               break;
             case assembler_c::ERR_NONE:
               break;
           }
           break;
         case solveThread_c::ACT_FINISHED:
-          cout << "\rdone";
+          cout << "\rdone\n";
           break;
       }
 
