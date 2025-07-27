@@ -44,13 +44,15 @@ void usage(void) {
 
   cout << "burrTxt [options] file [options]\n\n";
   cout << "  file: puzzle file with the puzzle definition to solve\n\n";
-  cout << "  -R    restart and throw away all found solutions, otherwise continue\n";
-  cout << "  -d    try to disassemble and only keep solutions that do disassemble\n";
-  cout << "  -c    just count solutions\n";
-  cout << "  -m    keep mirror solutions\n";
-  cout << "  -r    keep rotated solutions\n";
-  cout << "  -p    drop disassemblies and replace by information about disassembly\n";
-  cout << "  -b    selecte problem, else 0\n";
+  cout << "  -R             restart and throw away all found solutions, otherwise continue\n";
+  cout << "  -d             try to disassemble and only keep solutions that do disassemble\n";
+  cout << "  -c             just count solutions\n";
+  cout << "  -m             keep mirror solutions\n";
+  cout << "  -r             keep rotated solutions\n";
+  cout << "  -p             drop disassemblies and replace by information about disassembly\n";
+  cout << "  -b <number>    select problem, else 0\n";
+  cout << "  -l <number>    set solution count limit, default 1000\n";
+  cout << "  -o <path>      set output file\n";
 }
 
 
@@ -83,6 +85,8 @@ int main(int argv, char* args[]) {
   int filenumber = 0;
   int firstProblem = 0;
   int lastProblem = 1;
+  int solutionLimit = 1000;
+  std::string outname = "\0";
 
   for(int i = 1; i < argv; i++) {
 
@@ -102,6 +106,12 @@ int main(int argv, char* args[]) {
       firstProblem = atoi(args[i+1]);
       lastProblem = firstProblem + 1;
       i++;
+    } else if (strcmp(args[i], "-o") == 0) {
+      outname = args[i+1];
+      i++;
+    } else if (strcmp(args[i], "-l") == 0) {
+      solutionLimit = atoi(args[i+1]);
+      i++;
     }
     else
       filenumber = i;
@@ -112,13 +122,16 @@ int main(int argv, char* args[]) {
     return 1;
   }
 
+  if (outname == "\0") {
+    outname = args[filenumber];
+    outname += "ttt";
+  }
+
   std::istream * str = openGzFile(args[filenumber]);
   xmlParser_c pars(*str);
   puzzle_c p(pars);
   delete str;
 
-  std::string outname = args[filenumber];
-  outname += "ttt";
   cout << "outputting into " << outname << std::endl;
 
   ofstream ostr(outname.c_str());
@@ -139,6 +152,7 @@ int main(int argv, char* args[]) {
 
 
     solveThread_c assmThread(*p.getProblem(pr), par);
+    assmThread.setSolutionLimits(solutionLimit, 1);
 
     if (!assmThread.start(false)) {
       cout << "Could not start Solver\n";
