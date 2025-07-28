@@ -51,6 +51,7 @@ void usage(void) {
   cout << "  -r             keep rotated solutions\n";
   cout << "  -p             drop disassemblies and replace by information about disassembly\n";
   cout << "  -b <number>    select problem, else 0\n";
+  cout << "  -B             select all problems\n";
   cout << "  -l <number>    set solution count limit, default 1000\n";
   cout << "  -o <path>      set output file\n";
 }
@@ -84,7 +85,7 @@ int main(int argv, char* args[]) {
   bool restart = false;
   int filenumber = 0;
   int firstProblem = 0;
-  int lastProblem = 1;
+  int lastProblem = 0;
   int solutionLimit = 1000;
   std::string outname = "\0";
 
@@ -104,8 +105,11 @@ int main(int argv, char* args[]) {
       par |= solveThread_c::PAR_DROP_DISASSEMBLIES;
     else if (strcmp(args[i], "-b") == 0) {
       firstProblem = atoi(args[i+1]);
-      lastProblem = firstProblem + 1;
+      lastProblem = firstProblem;
       i++;
+    } else if (strcmp(args[i], "-B") == 0) {
+      firstProblem = -1;
+      lastProblem = -1;
     } else if (strcmp(args[i], "-o") == 0) {
       outname = args[i+1];
       i++;
@@ -144,8 +148,12 @@ int main(int argv, char* args[]) {
   for (unsigned int i = 0; i < p.getNumberOfShapes(); i++)
     p.getShape(i)->initHotspot();
 
+  if (firstProblem == -1) {
+    firstProblem = 0;
+    lastProblem = p.getNumberOfProblems() - 1;
+  }
 
-  for (int pr = firstProblem ; pr < lastProblem ; pr++) {
+  for (int pr = firstProblem ; pr <= lastProblem ; pr++) {
 
     if (restart)
       p.getProblem(pr)->removeAllSolutions();
