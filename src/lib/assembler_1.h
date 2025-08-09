@@ -21,6 +21,10 @@
 #ifndef __ASSEMBLER_1_H__
 #define __ASSEMBLER_1_H__
 
+// Set to 1 to use recursive code or 0 for iterative code (stock BurrTools).
+// Both should give the same behavior except recursive is not interruptable.
+#define ASSEMBLER_1_RECURSIVE 0
+
 #include "assembler.h"
 
 #include <vector>
@@ -114,8 +118,11 @@ private:
   void unhiderows(void);
   bool column_condition_fulfilled(int col);
   bool column_condition_fulfillable(int col);
-//  void rec(unsigned int next_row);
+  #if ASSEMBLER_1_RECURSIVE
+  void rec(unsigned int next_row);
+  #else
   void iterative(void);
+  #endif
   void remove_row(unsigned int r);
   void remove_column(unsigned int c);
   unsigned int clumpify(void);

@@ -1248,7 +1248,7 @@ bool assembler_1_c::column_condition_fulfillable(int col) {
 }
 
 
-#if 0
+#if ASSEMBLER_1_RECURSIVE
 
 // this is the recursive version of the method below. I will keep it
 // here and also try to keep it up to date to the changes I do to the
@@ -1266,12 +1266,14 @@ void assembler_1_c::rec(unsigned int next_row) {
   // check holes, if there are too many holes, we return
   if (holes < holeColumns.size()) {
     unsigned int cnt = holes;
-    for (int i = 0; i < holeColumns.size(); i++)
-      if (colCount[holeColumns[i]] == 0 && weight[holeColumns[i]] == 0)
-        if (cnt == 0)
+    for (unsigned int i = 0; i < holeColumns.size(); i++)
+      if (colCount[holeColumns[i]] == 0 && weight[holeColumns[i]] == 0) {
+        if (cnt == 0) {
           return;
-        else
+        } else {
           cnt--;
+        }
+      }
   }
 
   // when we get called with a header node (including 0)
@@ -1464,7 +1466,25 @@ void assembler_1_c::rec(unsigned int next_row) {
   finished_b.pop_back();
 }
 
-#endif
+void assembler_1_c::assemble(assembler_cb * callback) {
+
+  running = true;
+  abbort = false;
+  debug = false;
+
+  if (errorsState == ERR_NONE) {
+      asm_bc = callback;
+      rec(0);
+  }
+
+  running = false;
+}
+
+float assembler_1_c::getFinished(void) const {
+  return 1;
+}
+
+#else
 
 void assembler_1_c::iterative(void) {
 
@@ -1837,6 +1857,8 @@ float assembler_1_c::getFinished(void) const {
   return erg;
 }
 
+#endif
+
 static unsigned int getInt(const char * s, unsigned int * i) {
 
   char * s2;
@@ -2001,6 +2023,13 @@ unsigned int assembler_1_c::getPiecePlacementCount(unsigned int piece) const {
   return colCount[shape+1];
 }
 
+#if ASSEMBLER_1_RECURSIVE
+
+void assembler_1_c::debug_step(unsigned long /*num*/) {
+}
+
+#else
+
 void assembler_1_c::debug_step(unsigned long num) {
   debug = true;
   debug_loops = num;
@@ -2009,6 +2038,8 @@ void assembler_1_c::debug_step(unsigned long num) {
   iterative();
   debug = false;
 }
+
+#endif
 
 bool assembler_1_c::canHandle(const problem_c &) {
 
