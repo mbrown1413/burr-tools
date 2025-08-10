@@ -66,8 +66,8 @@ bool checkInput(void)
 
   /* Initialize the timeout data structure. */
   struct timeval timeout;
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 100000;
 
   /* select returns 0 if timeout, 1 if input available, -1 if error. */
   return select(FD_SETSIZE, &set, NULL, NULL, &timeout);
