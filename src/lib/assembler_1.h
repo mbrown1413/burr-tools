@@ -101,7 +101,7 @@ private:
   // because there are several batched of rows that need hiding these batches are separated
   // by a zero because the header row will never get hidden...
   std::vector<unsigned int>task_stack;
-  std::vector<unsigned int>next_row_stack;
+  std::vector<unsigned int>node_stack;
   std::vector<unsigned int>column_stack;
 
   unsigned int headerNodes;  // number of nodes within the header
@@ -118,6 +118,7 @@ private:
   void unhiderows(void);
   bool column_condition_fulfilled(int col);
   bool column_condition_fulfillable(int col);
+  bool max_holes_reached();
   #if ASSEMBLER_1_RECURSIVE
   void rec(unsigned int next_row);
   #else
