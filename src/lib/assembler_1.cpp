@@ -63,20 +63,39 @@
 /* When an interruptable task is next, we're safe to stop and save state for
  * debugging or aborting. */
 #define TASK_IS_INTERRUPTABLE() ( \
-  task_stack.back() == TASK_TYPE_1_UNCOVER_COLUMN_ONLY || \
-  task_stack.back() == TASK_TYPE_2 || \
-  task_stack.back() == TASK_TYPE_5 \
+  task_stack.back() == TASK_1_UNCOVER_COLUMN_ONLY || \
+  task_stack.back() == TASK_2_UNCOVER_COLUMN_ROWS || \
+  task_stack.back() == TASK_5_UNHIDE_ROWS \
 )
 
 enum TaskType {
-  TASK_TYPE_0_PROCESS_NODE,
-  TASK_TYPE_1_UNCOVER_COLUMN_ONLY,
-  TASK_TYPE_2,
-  TASK_TYPE_3,
-  TASK_TYPE_4_CHOOSE_ROW,
-  TASK_TYPE_5,
-  TASK_TYPE_6_UNCHOOSE_ROW,
-  TASK_TYPE_7,
+
+  // Choose a new column (if called with a header node) or start the row loop
+  // to iterate over all rows in the current column.
+  TASK_0_PROCESS_NODE,
+
+  // Undo covers done by task 0
+  TASK_1_UNCOVER_COLUMN_ONLY,
+  TASK_2_UNCOVER_COLUMN_ROWS,
+
+  // Initialization for looping through each row in the current column.
+  TASK_3_START_ROW_LOOP,
+
+  // Adds next row in current column to rowset.
+  // Recurses to task 0 to either choose a new column or choose an additional
+  // row from the same column.
+  TASK_4_CHOOSE_ROW,
+
+  // Undoes hidden rows from `hiderows()` call in task 4.
+  TASK_5_UNHIDE_ROWS,
+
+  // Removes current row to rowset.
+  // Goes to task 4 to choose next row.
+  TASK_6_UNCHOOSE_ROW,
+
+  // Unhides rows hidden during whole of loop.
+  TASK_7_END_ROW_LOOP,
+
 };
 
 void printMatrix(
@@ -312,7 +331,7 @@ assembler_1_c::assembler_1_c(const problem_c & prob) :
   reducePiece(0)
 {
   node_stack.push_back(0);
-  task_stack.push_back(TASK_TYPE_0_PROCESS_NODE);
+  task_stack.push_back(TASK_0_PROCESS_NODE);
 }
 
 assembler_1_c::~assembler_1_c() {
@@ -991,11 +1010,7 @@ void assembler_1_c::reduce(void) {
       // if row is no longer in there skip
       if (up[down[row]] != row || down[up[row]] != row) continue;
 
-
-      // add row to rowset
-      weight[colCount[row]] += weight[row];
-      for (unsigned int r = right[row]; r != row; r = right[r])
-        weight[colCount[r]] += weight[r];
+      add_row_weights(row);
 
       std::vector<unsigned int>hidden_rows;
 
@@ -1025,12 +1040,7 @@ void assembler_1_c::reduce(void) {
         hidden_rows.pop_back();
       }
 
-      // remove row from rowset
-      // we only need to restart adding the row from the place we stopped
-      // when we added
-      for (unsigned int r = left[row]; r != row; r = left[r])
-        weight[colCount[r]] -= weight[r];
-      weight[colCount[row]] -= weight[row];
+      subtract_row_weights(row);
     }
 
     dosth = toRemove.size() != 0;
@@ -1307,6 +1317,18 @@ bool assembler_1_c::max_holes_reached() {
   return false;
 }
 
+void assembler_1_c::add_row_weights(unsigned int row) {
+  weight[colCount[row]] += weight[row];
+  for (unsigned int r = right[row]; r != row; r = right[r])
+    weight[colCount[r]] += weight[r];
+}
+
+void assembler_1_c::subtract_row_weights(unsigned int row) {
+  for (unsigned int r = left[row]; r != row; r = left[r])
+    weight[colCount[r]] -= weight[r];
+  weight[colCount[row]] -= weight[row];
+}
+
 
 #if ASSEMBLER_1_RECURSIVE
 
@@ -1350,13 +1372,9 @@ void assembler_1_c::rec(unsigned int next_row) {
 
     cover_column_only(col);
 
-    if(colCount[col] == 0) {
-      // when there are no rows in the selected column, we don't need to find
-      // any row set and can continue right on with a new column
-      rec(0);
-    } else {
-      rec(down[col]);
-    }
+    // when there are no rows in the selected column, this node will be
+    // a header so we we will choose a new column next
+    rec(down[col]);
 
     //--------> case 1
 
@@ -1370,7 +1388,6 @@ void assembler_1_c::rec(unsigned int next_row) {
   // make sure wan can actually achieve something, the false case should
   // have been checked before calling this function
   bt_assert(column_condition_fulfillable(col));
-
 
   // it might be that the condition for this column is already fulfilled, without adding a single
   // line to the column that is why we do this check here at the start of the function
@@ -1403,22 +1420,19 @@ void assembler_1_c::rec(unsigned int next_row) {
   //-------> case 3
 
   // add a unhiderows marker, so that the rows hidden in the loop
-  // below can be unhidden properly
+  // below are unhidden when `unhiderows()` is called.
   hidden_rows.push_back(0);
 
   // now try all rows starting with the row given as parameter
   // and go down until we are in the header. When we go up
   // from the header we actually end in a node with a higher
   // number, that's the end check
-  //-------> case 4
   for (unsigned int row = next_row; up[row] < row ; row = down[row]) {
 
-    rows.push_back(row);
+    //-------> case 4
 
-    // add row to rowset
-    weight[colCount[row]] += weight[row];
-    for (unsigned int r = right[row]; r != row; r = right[r])
-      weight[colCount[r]] += weight[r];
+    rows.push_back(row);
+    add_row_weights(row);
 
     // if there are unfulfillable columns we don't even need to check any further
     if (open_column_conditions_fulfillable()) {
@@ -1427,50 +1441,38 @@ void assembler_1_c::rec(unsigned int next_row) {
       // in one of their nodes that would overflow the expected weight
       hiderows(row);
 
-      if (open_column_conditions_fulfillable()) {
+      if (
+        open_column_conditions_fulfillable() &&
+        column_condition_fulfillable(col)
+      ) {
+          unsigned int newrow;
+          if (colCount[col] == 0) {
+            newrow = 0;  // choose new column
+          } else {
 
-        if (colCount[col] == 0) {
-
-          // when there are no more rows in the current column
-          // we can immediately start a new column
-          // if the current column condition is really fulfilled
-          if (column_condition_fulfilled(col))
-            rec(0);
-
-        } else {
-
-          // we need to recurse, if there are rows left and the current
-          // column condition is still fulfillable, we need to check
-          // the current column again because this column is no longer open,
-          // is was removed on selection
-          if (column_condition_fulfillable(col)) {
-
-            unsigned int newrow = row;
-
-            // do gown until we hit a row that is still inside the matrix
+            // go down until we hit a row that is still inside the matrix.
             // this works because rows are hidden one by one and so the double link
             // to the row above or below is no longer intact, when the row is gone, the down
             // pointer still points to the row that is was below before the row was hidden, but
             // the pointer from the row below doesn't point up to us, so we do down until
             // the link down-up points back to us
-            while ((down[newrow] >= headerNodes) && up[down[newrow]] != newrow) newrow = down[newrow];
+            newrow = row;
+            while ((down[newrow] >= headerNodes) && up[down[newrow]] != newrow)
+              newrow = down[newrow];
 
-            rec(newrow);
           }
-        }
+
+          rec(newrow);
       }
 
-  //-------> case 5
+      //-------> case 5
       // reinsert the rows removed above
       unhiderows();
     }
 
-  //-------> case 6
-    // remove row from rowset
-    for (unsigned int r = left[row]; r != row; r = left[r])
-      weight[colCount[r]] -= weight[r];
-    weight[colCount[row]] -= weight[row];
+    //-------> case 6
 
+    subtract_row_weights(row);
     rows.pop_back();
 
     (finished_a.back())++;
@@ -1529,7 +1531,7 @@ void assembler_1_c::iterative(void) {
     // the cases in this switch are marked in the function above
     switch (task_stack.back()) {
 
-      case TASK_TYPE_0_PROCESS_NODE:
+      case TASK_0_PROCESS_NODE:
 
         if (max_holes_reached()) {
           TASK_POP();
@@ -1564,57 +1566,53 @@ void assembler_1_c::iterative(void) {
 
           cover_column_only(col);
           column_stack.push_back(col);
-          TASK_CHANGE(TASK_TYPE_1_UNCOVER_COLUMN_ONLY);
+          TASK_CHANGE(TASK_1_UNCOVER_COLUMN_ONLY);
 
-          if(colCount[col] == 0) {
-            // when there are no rows in the selected column, we don't need to
-            // find any row set and can continue right on with a new column
-            TASK_PUSH(TASK_TYPE_0_PROCESS_NODE, 0);
-          } else {
-            TASK_PUSH(TASK_TYPE_0_PROCESS_NODE, down[col]);
-          }
-          break;
+          // when there are no rows in the selected column, this node will be
+          // a header so we we will choose a new column next
+          TASK_PUSH(TASK_0_PROCESS_NODE, down[col]);
 
-        } else { // Node is not a header: consider choosing this row
-          col = colCount[node_stack.back()];
-
-          // make sure we can actually achieve something, the false case should
-          // have been checked before calling this function
-          bt_assert(column_condition_fulfillable(col));
-
-          // it might be that the condition for this column is already fulfilled, without adding a single
-          // line to the column that is why we do this check here at the start of the function
-          if (column_condition_fulfilled(col)) {
-            DEBUG_PRINT("column %i condition fulfilled, recurse\n", col);
-
-            finished_b.push_back(colCount[colCount[node_stack.back()]]+1);
-            finished_a.push_back(0);
-
-            // remove all rows that are left within this column
-            // this way we make sure we are _not_ changing this columns value any more
-            cover_column_rows(col);
-
-            if (open_column_conditions_fulfillable()) {
-              TASK_CHANGE(TASK_TYPE_2);
-              TASK_PUSH(TASK_TYPE_0_PROCESS_NODE, 0);
-              break;
-            }
-
-            TASK_CHANGE(TASK_TYPE_2);
-            break;
-
-          } else {
-            finished_b.push_back(colCount[colCount[node_stack.back()]]);
-            finished_a.push_back(0);
-          }
-
-          TASK_CHANGE(TASK_TYPE_3);
           break;
         }
 
-      case TASK_TYPE_1_UNCOVER_COLUMN_ONLY:
+        // Node is not a header
 
-        // reinsert this column
+        col = colCount[node_stack.back()];
+
+        // make sure we can actually achieve something, the false case should
+        // have been checked before calling this function
+        bt_assert(column_condition_fulfillable(col));
+
+        // it might be that the condition for this column is already fulfilled, without adding a single
+        // line to the column that is why we do this check here at the start of the function
+        if (column_condition_fulfilled(col)) {
+          DEBUG_PRINT("column %i condition fulfilled, recurse\n", col);
+
+          finished_b.push_back(colCount[colCount[node_stack.back()]]+1);
+          finished_a.push_back(0);
+
+          // remove all rows that are left within this column
+          // this way we make sure we are _not_ changing this columns value any more
+          cover_column_rows(col);
+
+          // Undo cover then fall through to task 3 to loop through rows.
+          TASK_CHANGE(TASK_2_UNCOVER_COLUMN_ROWS);
+
+          if (open_column_conditions_fulfillable()) {
+            TASK_PUSH(TASK_0_PROCESS_NODE, 0);
+          }
+
+          break;
+
+        } else {
+          finished_b.push_back(colCount[colCount[node_stack.back()]]);
+          finished_a.push_back(0);
+        }
+
+        TASK_CHANGE(TASK_3_START_ROW_LOOP);
+        break;
+
+      case TASK_1_UNCOVER_COLUMN_ONLY:
         DEBUG_PRINT("reinserting column %i\n", column_stack.back());
 
         uncover_column_only(column_stack.back());
@@ -1623,118 +1621,82 @@ void assembler_1_c::iterative(void) {
         TASK_POP();
         break;
 
-      case TASK_TYPE_2:
-
-        // reinsert rows of this column
-        uncover_column_rows(colCount[node_stack.back()]);
-
+      case TASK_2_UNCOVER_COLUMN_ROWS:
+        uncover_column_rows(colCount[node_stack.back()]);  // reinsert rows of this column
         (finished_a.back())++;
-
         // fall through
-      case TASK_TYPE_3:
+
+      case TASK_3_START_ROW_LOOP:
 
         // add an unhiderows marker, so that the rows hidden in the loop
-        // below can be unhidden properly
+        // below are unhidden when `unhiderows()` is called.
         hidden_rows.push_back(0);
 
+        // Consider whether to start row loop
         row = node_stack.back();
-
         if (up[row] < row) {
           rows.push_back(row);
           // fall through
         } else {
-          TASK_CHANGE(TASK_TYPE_7);
+          TASK_CHANGE(TASK_7_END_ROW_LOOP);
           break;
         }
         // fall through
 
-      case TASK_TYPE_4_CHOOSE_ROW:
-
+      case TASK_4_CHOOSE_ROW:
         row = rows.back();
         col = colCount[node_stack.back()];
+        DEBUG_PRINT("add row %i for column %i\n", row, col);
 
-        DEBUG_PRINT("add row %i for columns %i\n", row, col);
-
-        // add row to rowset
-        weight[colCount[row]] += weight[row];
-        for (unsigned int r = right[row]; r != row; r = right[r])
-          weight[colCount[r]] += weight[r];
+        add_row_weights(row);
 
         // if there are unfulfillable columns we don't even need to check any further
-        if (open_column_conditions_fulfillable()) {
-
-          // remove useless rows (that are rows that have too much weight
-          // in one of their nodes that would overflow the expected weight
-          hiderows(row);
-
-          if (open_column_conditions_fulfillable()) {
-
-            if (colCount[col] == 0) {
-
-              // when there are no more rows in the current column
-              // we can immediately start a new column
-              // if the current column condition is really fulfilled
-              if (column_condition_fulfilled(col)) {
-
-                DEBUG_PRINT("recurse because columns %i condition fulfilled\n", col);
-
-                TASK_CHANGE(TASK_TYPE_5);
-                TASK_PUSH(TASK_TYPE_0_PROCESS_NODE, 0);
-                break;
-              }
-
-            } else {
-
-              // we need to recurse, if there are rows left and the current
-              // column condition is still fulfillable, we need to check
-              // the current column again because this column is no longer open,
-              // is was removed on selection
-              if (column_condition_fulfillable(col)) {
-
-                unsigned int newrow = row;
-
-                // go down until we hit a row that is still inside the matrix.
-                // this works because rows are hidden one by one and so the double link
-                // to the row above or below is no longer intact, when the row is gone, the down
-                // pointer still points to the row that is was below before the row was hidden, but
-                // the pointer from the row below doesn't point up to us, so we do down until
-                // the link down-up points back to us
-                while ((down[newrow] >= headerNodes) && up[down[newrow]] != newrow) newrow = down[newrow];
-
-                TASK_CHANGE(TASK_TYPE_5);
-                TASK_PUSH(TASK_TYPE_0_PROCESS_NODE, newrow);
-                break;
-              }
-
-              DEBUG_PRINT("no recurse because columns %i condition fulfillable\n", col);
-            }
-          }
-
-          // fall through to state 5
-
-        } else {
-
+        if (!open_column_conditions_fulfillable()) {
           DEBUG_PRINT("no recurse because one columns condition fulfillable\n");
-          TASK_CHANGE(TASK_TYPE_6_UNCHOOSE_ROW);
+          TASK_CHANGE(TASK_6_UNCHOOSE_ROW);
           break;
         }
-        // fall through
 
-      case TASK_TYPE_5:
+        // remove useless rows (that are rows that have too much weight
+        // in one of their nodes that would overflow the expected weight
+        hiderows(row);
+
+        if (
+          open_column_conditions_fulfillable() &&
+          column_condition_fulfillable(col)
+        ) {
+          unsigned int newrow;
+          if (colCount[col] == 0) {
+            newrow = 0;  // choose new column
+          } else {
+
+            // go down until we hit a row that is still inside the matrix.
+            // this works because rows are hidden one by one and so the double link
+            // to the row above or below is no longer intact, when the row is gone, the down
+            // pointer still points to the row that is was below before the row was hidden, but
+            // the pointer from the row below doesn't point up to us, so we do down until
+            // the link down-up points back to us
+            newrow = row;
+            while ((down[newrow] >= headerNodes) && up[down[newrow]] != newrow)
+              newrow = down[newrow];
+
+          }
+
+          TASK_CHANGE(TASK_5_UNHIDE_ROWS);
+          TASK_PUSH(TASK_0_PROCESS_NODE, newrow);
+          break;
+        }
+        //fall through
+
+      case TASK_5_UNHIDE_ROWS:
         unhiderows();
         // fall through
 
-      case TASK_TYPE_6_UNCHOOSE_ROW:
-
-        // remove row from rowset
+      case TASK_6_UNCHOOSE_ROW:
         row = rows.back();
-
         DEBUG_PRINT("remove row %i\n", row);
 
-        for (unsigned int r = left[row]; r != row; r = left[r])
-          weight[colCount[r]] -= weight[r];
-        weight[colCount[row]] -= weight[row];
-
+        subtract_row_weights(row);
         rows.pop_back();
 
         (finished_a.back())++;
@@ -1744,17 +1706,16 @@ void assembler_1_c::iterative(void) {
         hiderow(row);
         hidden_rows.push_back(row);
 
+        // Continue loop with next row
         row = down[row];
-
         if (up[row] < row) {
           rows.push_back(row);
-          TASK_CHANGE(TASK_TYPE_4_CHOOSE_ROW);
+          TASK_CHANGE(TASK_4_CHOOSE_ROW);
           break;
         }
-          // else fall through to state 7
-
         // fall through
-      case TASK_TYPE_7:
+
+      case TASK_7_END_ROW_LOOP:
 
         // reinsert all the rows that were removed over the course of the
         // row by row inspection
@@ -1767,7 +1728,6 @@ void assembler_1_c::iterative(void) {
         break;
 
       default:
-
         bt_assert(0);
         break;
     }
@@ -1883,10 +1843,7 @@ assembler_c::errState assembler_1_c::setPosition(const char * string, const char
         }
 
         row = rows[row_pos++];
-        // add row to rowset
-        weight[colCount[row]] += weight[row];
-        for (unsigned int r = right[row]; r != row; r = right[r])
-          weight[colCount[r]] += weight[r];
+        add_row_weights(row);
 
         hiderows_pos++;
         while (hiderows_pos < hidden_rows.size() && hidden_rows[hiderows_pos] > 0) {

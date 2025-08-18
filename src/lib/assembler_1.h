@@ -119,6 +119,8 @@ private:
   bool column_condition_fulfilled(int col);
   bool column_condition_fulfillable(int col);
   bool max_holes_reached();
+  void add_row_weights(unsigned int row);
+  void subtract_row_weights(unsigned int row);
   #if ASSEMBLER_1_RECURSIVE
   void rec(unsigned int next_row);
   #else
