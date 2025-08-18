@@ -102,6 +102,8 @@
 
 #include <fstream>
 
+#define MAX(a,b) ((a>b)?(a):(b))
+
 /* returns true, if file exists, this is not the
  optimal way to do this. It would be better to open
  the directory the file is supposed to be in and look there
@@ -1004,7 +1006,7 @@ void mainWindow_c::cb_BtnCont(bool prep_only) {
   assmThread = new solveThread_c(*puzzle->getProblem(prob), par);
 
   assmThread->setSortMethod(sortMethod->value());
-  assmThread->setSolutionLimits((int)solLimit->value(), (int)solDrop->value());
+  assmThread->setSolutionLimits((int) MAX(solLimit->value(), 1), (int) MAX(solDrop->value(), 1));
 
   if (!assmThread->start(prep_only)) {
     fl_message("Could not start the solving process, the thread creation failed, sorry.");

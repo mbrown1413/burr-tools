@@ -28,6 +28,8 @@
 
 #include <time.h>
 
+#define MAX(a,b) ((a>b)?(a):(b))
+
 class problem_c;
 
 /* this class will handle the solving of one problem of the puzzle, it can also
@@ -135,8 +137,8 @@ class solveThread_c : public assembler_cb, public thread_c {
   public:
 
     void setSolutionLimits(unsigned int limit, unsigned int drop = 1) {
-      solutionLimit = limit;
-      solutionDrop = drop;
+      solutionLimit = MAX(limit, 1);
+      solutionDrop = MAX(drop, 1);
     }
 
   private:
