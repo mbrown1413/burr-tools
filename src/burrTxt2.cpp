@@ -40,20 +40,48 @@
 
 using namespace std;
 
-void usage(void) {
+void usage(const char* error) {
+  cout << R"(burrTxt2 [options] file [options]
 
-  cout << "burrTxt [options] file [options]\n\n";
-  cout << "  file: puzzle file with the puzzle definition to solve\n\n";
-  cout << "  -R             restart and throw away all found solutions, otherwise continue\n";
-  cout << "  -d             try to disassemble and only keep solutions that do disassemble\n";
-  cout << "  -c             just count solutions\n";
-  cout << "  -m             keep mirror solutions\n";
-  cout << "  -r             keep rotated solutions\n";
-  cout << "  -p             drop disassemblies and replace by information about disassembly\n";
-  cout << "  -b <number>    select problem, else 0\n";
-  cout << "  -B             select all problems\n";
-  cout << "  -l <number>    set solution count limit, default 1000\n";
-  cout << "  -o <path>      set output file\n";
+file: puzzle file with the puzzle definition to solve
+
+-h, --help
+  print this help and exit
+
+-R, --restart
+  restart and throw away all found solutions, otherwise continue
+
+-d, --disassemble
+  try to disassemble and only keep solutions that do disassemble
+
+-c, --count
+  just count solutions
+
+-m, --mirror-keep
+  keep mirror solutions
+
+-r, --rotation-keep
+  keep rotated solutions
+
+-p, --drop-disassemblies
+  drop disassemblies and replace by information about disassembly
+
+-b <number>, --first-problem <number>
+  select problem. Default 0
+
+-B, --all-problems
+  select all problems
+
+-l <number>, --solution-limit <number>
+  set solution count limit, default 1000
+
+-o <path>, --output
+  set output file
+)";
+
+  if (error) {
+    cout << "\nerror: " << error << "\n";
+  }
 }
 
 
@@ -77,7 +105,7 @@ bool checkInput(void)
 int main(int argv, char* args[]) {
 
   if (argv < 1) {
-    usage();
+    usage("Not enough arguments");
     return 2;
   }
 
@@ -91,38 +119,45 @@ int main(int argv, char* args[]) {
 
   for(int i = 1; i < argv; i++) {
 
-    if (strcmp(args[i], "-R") == 0)
+    if (strcmp(args[i], "--help") == 0 || strcmp(args[i], "-h") == 0) {
+      usage(NULL);
+      return 2;
+    } else if (strcmp(args[i], "--restart") == 0 || strcmp(args[i], "-R") == 0)
       restart = true;
-    else if (strcmp(args[i], "-d") == 0)
+    else if (strcmp(args[i], "--disassemble") == 0 || strcmp(args[i], "-d") == 0)
       par |= solveThread_c::PAR_DISASSM;
-    else if (strcmp(args[i], "-c") == 0)
+    else if (strcmp(args[i], "--count") == 0 || strcmp(args[i], "-c") == 0)
       par |= solveThread_c::PAR_JUST_COUNT;
-    else if (strcmp(args[i], "-m") == 0)
+    else if (strcmp(args[i], "--mirror-keep") == 0 || strcmp(args[i], "-m") == 0)
       par |= solveThread_c::PAR_KEEP_MIRROR;
-    else if (strcmp(args[i], "-r") == 0)
+    else if (strcmp(args[i], "--rotation-keep") == 0 || strcmp(args[i], "-r") == 0)
       par |= solveThread_c::PAR_KEEP_ROTATIONS;
-    else if (strcmp(args[i], "-p") == 0)
+    else if (strcmp(args[i], "--drop-disassemblies") == 0 || strcmp(args[i], "-p") == 0)
       par |= solveThread_c::PAR_DROP_DISASSEMBLIES;
-    else if (strcmp(args[i], "-b") == 0) {
+    else if (strcmp(args[i], "--first-problem") == 0 || strcmp(args[i], "-b") == 0) {
       firstProblem = atoi(args[i+1]);
       lastProblem = firstProblem;
       i++;
-    } else if (strcmp(args[i], "-B") == 0) {
+    } else if (strcmp(args[i], "--all-problems") == 0 || strcmp(args[i], "-B") == 0) {
       firstProblem = -1;
       lastProblem = -1;
-    } else if (strcmp(args[i], "-o") == 0) {
-      outname = args[i+1];
-      i++;
-    } else if (strcmp(args[i], "-l") == 0) {
+    } else if (strcmp(args[i], "--solution-limit") == 0 || strcmp(args[i], "-l") == 0) {
       solutionLimit = atoi(args[i+1]);
       i++;
-    }
-    else
+    } else if (strcmp(args[i], "--output") == 0 || strcmp(args[i], "-o") == 0) {
+      outname = args[i+1];
+      i++;
+    } else {
+      if (filenumber != 0) {
+        usage("Only one puzzle file may be given");
+        return 1;
+      }
       filenumber = i;
+    }
   }
 
   if (filenumber == 0) {
-    usage();
+    usage("No puzzle specified");
     return 1;
   }
 
@@ -157,7 +192,6 @@ int main(int argv, char* args[]) {
 
     if (restart)
       p.getProblem(pr)->removeAllSolutions();
-
 
     solveThread_c assmThread(*p.getProblem(pr), par);
     assmThread.setSolutionLimits(solutionLimit, 1);
@@ -195,7 +229,6 @@ int main(int argv, char* args[]) {
         cout << " expression: " << assmThread.getAssertException().expr << "\n";
         return 1;
       }
-
 
       float finished = (p.getProblem(pr)->getAssembler())
         ? p.getProblem(pr)->getAssembler()->getFinished()
