@@ -84,7 +84,6 @@ file: puzzle file with the puzzle definition to solve
   }
 }
 
-
 bool checkInput(void)
 {
   /* Initialize the file descriptor set. */
@@ -101,6 +100,16 @@ bool checkInput(void)
   return select(FD_SETSIZE, &set, NULL, NULL, &timeout);
 }
 
+/* portable implementation copied from mainwindow.cpp */
+bool fileExists(const char *n) {
+  FILE *f = fopen(n, "r");
+
+  if (f) {
+    fclose(f);
+    return true;
+  } else
+    return false;
+}
 
 int main(int argv, char* args[]) {
 
@@ -164,6 +173,11 @@ int main(int argv, char* args[]) {
   if (outname == "\0") {
     outname = args[filenumber];
     outname += "ttt";
+  }
+
+  if(!fileExists(args[filenumber])) {
+    cout << "Input file not found\n";
+    return 2;
   }
 
   std::istream * str = openGzFile(args[filenumber]);
