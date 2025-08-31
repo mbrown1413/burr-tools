@@ -72,11 +72,11 @@ private:
   std::vector<unsigned int> max;
 
   /* this vector contains all columns that are used for the hole
-   * optimisation: up to "holes" instances of these columns might
+   * optimisation: up to "maxHoles" instances of these columns might
    * be zero
    */
   std::vector<unsigned int> holeColumns;
-  unsigned int holes;
+  unsigned int maxHoles;
 
   /* this function gets called whenever an assembly was found
    * when a callback is available it will call getAssembly to
@@ -95,8 +95,13 @@ private:
   bool running;
 
   std::vector<unsigned int> rows;
-  std::vector<unsigned int> finished_a;
-  std::vector<unsigned int> finished_b;
+
+  /* For each column chosen, these track the number of choices we've considered
+   * and the total number of choices we must consider. Used to calculate progress.
+   */
+  std::vector<unsigned int> col_choices_completed;
+  std::vector<unsigned int> col_choices_total;
+
   std::vector<unsigned int> hidden_rows;  // rows that nodes to rows that are currently hidden
   // because there are several batched of rows that need hiding these batches are separated
   // by a zero because the header row will never get hidden...

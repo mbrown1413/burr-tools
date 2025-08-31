@@ -729,7 +729,7 @@ assembler_1_c::errState assembler_1_c::createMatrix(bool keepMirror, bool keepRo
 
   /* count the filled and variable units */
   unsigned int res_vari = getResultShape(problem)->countState(voxel_c::VX_VARIABLE);
-  unsigned int res_filled = getResultShape(problem)->countState(voxel_c::VX_FILLED) + res_vari;
+  unsigned int res_total = getResultShape(problem)->countState(voxel_c::VX_FILLED) + res_vari;
 
   // check if number of voxels in pieces is not bigger than
   // number of voxel in result
@@ -745,36 +745,36 @@ assembler_1_c::errState assembler_1_c::createMatrix(bool keepMirror, bool keepRo
   }
 
   if (min == max)
-    holes = res_filled - min;
+    maxHoles = res_total - min;
   else if (problem.maxHolesDefined())
-    holes = problem.getMaxHoles();
+    maxHoles = problem.getMaxHoles();
   else
-    holes = 0xFFFFFF;
+    maxHoles = 0xFFFFFF;
 
-  if (min > res_filled) {
+  if (min > res_total) {
     errorsState = ERR_TOO_MANY_UNITS;
-    errorsParam = min-res_filled;
+    errorsParam = min-res_total;
     return errorsState;
   }
 
-  if (max < res_filled-res_vari) {
+  if (max < res_total-res_vari) {
     errorsState = ERR_TOO_FEW_UNITS;
-    errorsParam = res_filled-res_vari-max;
+    errorsParam = res_total-res_vari-max;
     return errorsState;
   }
 
   /* in some cases it is useful to count the number of blocks the range pieces contribute
    * this is calculated here
    *
-   * the result will contain between res_filled-res_vari   and res_filled voxels
+   * the result will contain between res_total-res_vari   and res_total voxels
    * now we can subtract all voxels contributed by fixed placed pieces (with no range)
    * and get the range of voxels that must be occupied by the range pieces
    *
    * This additional check prevents adding too many pieces from the ranges and so making placement of
    * pieces that have to be placed impossible
    */
-  int RangeMin = res_filled-res_vari;
-  int RangeMax = res_filled;
+  int RangeMin = res_total-res_vari;
+  int RangeMax = res_total;
 
   for (unsigned int j = 0; j < problem.getNumberOfParts(); j++) {
     if (problem.getPartMinimum(j) == problem.getPartMaximum(j)) {
@@ -1300,11 +1300,11 @@ bool assembler_1_c::column_condition_fulfillable(int col) {
 }
 
 bool assembler_1_c::max_holes_reached() {
-  if (holes >= holeColumns.size()) {
+  if (maxHoles >= holeColumns.size()) {
     return false;
   }
 
-  unsigned int cnt = holes;
+  unsigned int cnt = maxHoles;
   for (unsigned int i = 0; i < holeColumns.size(); i++) {
     if (colCount[holeColumns[i]] == 0 && weight[holeColumns[i]] == 0) {
       if (cnt == 0) {
@@ -1393,8 +1393,8 @@ void assembler_1_c::rec(unsigned int next_row) {
   // line to the column that is why we do this check here at the start of the function
   if (column_condition_fulfilled(col)) {
 
-    finished_b.push_back(colCount[colCount[next_row]]+1);
-    finished_a.push_back(0);
+    col_choices_total.push_back(colCount[colCount[next_row]]+1);
+    col_choices_completed.push_back(0);
 
     // remove all rows that are left within this column
     // this way we make sure we are _not_ changing this columns value any more
@@ -1408,12 +1408,12 @@ void assembler_1_c::rec(unsigned int next_row) {
     // reinsert rows of this column
     uncover_column_rows(col);
 
-    (finished_a.back())++;
+    (col_choices_completed.back())++;
 
   } else {
 
-    finished_b.push_back(colCount[colCount[next_row]]);
-    finished_a.push_back(0);
+    col_choices_total.push_back(colCount[colCount[next_row]]);
+    col_choices_completed.push_back(0);
 
   }
 
@@ -1475,7 +1475,7 @@ void assembler_1_c::rec(unsigned int next_row) {
     subtract_row_weights(row);
     rows.pop_back();
 
-    (finished_a.back())++;
+    (col_choices_completed.back())++;
 
     // after we finished with this row, we will never use it again, so
     // remove it from the matrix
@@ -1489,8 +1489,8 @@ void assembler_1_c::rec(unsigned int next_row) {
   // row by row inspection
   unhiderows();
 
-  finished_a.pop_back();
-  finished_b.pop_back();
+  col_choices_completed.pop_back();
+  col_choices_total.pop_back();
 }
 
 void assembler_1_c::assemble(assembler_cb * callback) {
@@ -1588,8 +1588,8 @@ void assembler_1_c::iterative(void) {
         if (column_condition_fulfilled(col)) {
           DEBUG_PRINT("column %i condition fulfilled, recurse\n", col);
 
-          finished_b.push_back(colCount[colCount[node_stack.back()]]+1);
-          finished_a.push_back(0);
+          col_choices_total.push_back(colCount[colCount[node_stack.back()]]+1);
+          col_choices_completed.push_back(0);
 
           // remove all rows that are left within this column
           // this way we make sure we are _not_ changing this columns value any more
@@ -1605,8 +1605,8 @@ void assembler_1_c::iterative(void) {
           break;
 
         } else {
-          finished_b.push_back(colCount[colCount[node_stack.back()]]);
-          finished_a.push_back(0);
+          col_choices_total.push_back(colCount[colCount[node_stack.back()]]);
+          col_choices_completed.push_back(0);
         }
 
         TASK_CHANGE(TASK_3_START_ROW_LOOP);
@@ -1623,7 +1623,7 @@ void assembler_1_c::iterative(void) {
 
       case TASK_2_UNCOVER_COLUMN_ROWS:
         uncover_column_rows(colCount[node_stack.back()]);  // reinsert rows of this column
-        (finished_a.back())++;
+        (col_choices_completed.back())++;
         // fall through
 
       case TASK_3_START_ROW_LOOP:
@@ -1699,7 +1699,7 @@ void assembler_1_c::iterative(void) {
         subtract_row_weights(row);
         rows.pop_back();
 
-        (finished_a.back())++;
+        (col_choices_completed.back())++;
 
         // after we finished with this row, we will never use it again, so
         // remove it from the matrix
@@ -1721,8 +1721,8 @@ void assembler_1_c::iterative(void) {
         // row by row inspection
         unhiderows();
 
-        finished_a.pop_back();
-        finished_b.pop_back();
+        col_choices_completed.pop_back();
+        col_choices_total.pop_back();
 
         TASK_POP();
         break;
@@ -1758,10 +1758,10 @@ float assembler_1_c::getFinished(void) const {
 
   float erg = 0;
 
-  for (int r = finished_a.size()-1; r >= 0; r--) {
+  for (int r = col_choices_completed.size()-1; r >= 0; r--) {
 
-    erg += finished_a[r];
-    erg /= finished_b[r];
+    erg += col_choices_completed[r];
+    erg /= col_choices_total[r];
   }
 
   return erg;
@@ -1814,8 +1814,8 @@ assembler_c::errState assembler_1_c::setPosition(const char * string, const char
   pos += stringToVector(string+pos, node_stack);     if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
   pos += stringToVector(string+pos, column_stack);   if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
   pos += stringToVector(string+pos, hidden_rows);    if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
-  pos += stringToVector(string+pos, finished_a);     if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
-  pos += stringToVector(string+pos, finished_b);
+  pos += stringToVector(string+pos, col_choices_completed);     if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
+  pos += stringToVector(string+pos, col_choices_total);
 
   // not we need to restore the matrix to the right state
 
@@ -1880,8 +1880,8 @@ void assembler_1_c::save(xmlWriter_c & xml) const
   vectorToStream(node_stack, str);
   vectorToStream(column_stack, str);
   vectorToStream(hidden_rows, str);
-  vectorToStream(finished_a, str);
-  vectorToStream(finished_b, str);
+  vectorToStream(col_choices_completed, str);
+  vectorToStream(col_choices_total, str);
 
   xml.endTag("assembler");
 }
