@@ -56,7 +56,7 @@ protected:
 
 private:
 
-  /* this are the members of the node. One array for each member. This
+  /* these are the members of the node. One array for each member. This
    * accelerates access.
    *
    * colCount is a shared member. It is column for normal nodes and count for
@@ -78,13 +78,13 @@ private:
   std::vector<unsigned int> holeColumns;
   unsigned int maxHoles;
 
-  /* this function gets called whenever an assembly was found
-   * when a callback is available it will call getAssembly to
-   * obtain the assembly for the found solution when the
+  /* this function gets called whenever an assembly was found.
+   * When a callback is available it will call getAssembly to
+   * obtain the assembly for the found solution. When the
    * field avoidTransformedAssemblies is true then the assembly
-   * is checked, if it has been found before. The assembly
-   * is normalised in inserted into a set of assemblies for
-   * later reference
+   * is checked if it has been found before. The assembly
+   * is normalised and inserted into a set of assemblies for
+   * later reference.
    */
   void solution(void);
 
@@ -104,7 +104,7 @@ private:
 
   std::vector<unsigned int> hidden_rows;  // rows that nodes to rows that are currently hidden
   // because there are several batched of rows that need hiding these batches are separated
-  // by a zero because the header row will never get hidden...
+  // by a zero because the header row will never get hidden.
   std::vector<unsigned int>task_stack;
   std::vector<unsigned int>node_stack;
   std::vector<unsigned int>column_stack;
@@ -142,11 +142,11 @@ private:
    */
   bool canPlace(const voxel_c * piece, int x, int y, int z) const;
 
-  /* this function creates the matrix for the search function
-   * because we need to know how many nodes we need to allocate the
+  /* this function creates the matrix for the search function.
+   * Because we need to know how many nodes we need to allocate the
    * arrays with the right size, we add a parameter. If this is true
    * the function will not access the array but only count the number
-   * of nodes used. This number is returned
+   * of nodes used. This number is returned.
    *
    * return error codes
    */
@@ -249,13 +249,13 @@ protected:
 
   /* call this function if you think that there might be
    * rotated assemblies found. Here a description of how the whole aspect of
-   * rotation avoiding is supposed to work
-   * the front end is supposed to initialise the assembler so that as few as
+   * rotation avoiding is supposed to work:
+   * The front end is supposed to initialise the assembler so that as few as
    * possible double assemblies are found by selecting one piece and not placing
-   * this piece in all possible positions. But this will not always work, if
-   * the front end is are not absolutely certain that it has avoided all possible
+   * this piece in all possible positions. But this will not always work. If
+   * the front end is not absolutely certain that it has avoided all possible
    * rotations it should call this function. This will then add an additional check
-   * for each found assembly
+   * for each found assembly.
    */
   void checkForTransformedAssemblies(unsigned int pivot, mirrorInfo_c * mir);
 

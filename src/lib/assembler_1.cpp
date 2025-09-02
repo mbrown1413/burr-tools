@@ -365,7 +365,7 @@ bool assembler_1_c::canPlace(const voxel_c * piece, int x, int y, int z) const {
     for (unsigned int py = piece->boundY1(); py <= piece->boundY2(); py++)
       for (unsigned int px = piece->boundX1(); px <= piece->boundX2(); px++)
         if (
-            // the piece can not be place if the result is empty and the piece is filled at a given voxel
+            // the piece cannot be placed if the result is empty and the piece is filled at a given voxel
             ((piece->getState(px, py, pz) == voxel_c::VX_FILLED) &&
              (result->getState(x+px, y+py, z+pz) == voxel_c::VX_EMPTY)) ||
 
@@ -380,7 +380,7 @@ bool assembler_1_c::canPlace(const voxel_c * piece, int x, int y, int z) const {
 
 /**
  * this function prepares the matrix of nodes for the recursive function
- * I've done some additions to Knuths algorithm to implement variable
+ * I've made some additions to Knuth's algorithm to implement variable
  * voxels (empty spaces in the solution) and multiple instances of the
  * same piece. Empty voxels in the result are done by removing columns
  * from the matrix. This will prevent the algorithm from filling the
@@ -394,10 +394,10 @@ bool assembler_1_c::canPlace(const voxel_c * piece, int x, int y, int z) const {
  * pieces swapping places we number the pieces and their possible
  * placements and disallow that the position number of piece n is lower
  * than the position number of piece n-1. This can be achieved by adding
- * more constraint columns. There need to be one column for each
+ * more constraint columns. There need to be one column for each.
  *
- * negative result show there is something wrong: the place -result has not
- * possible position inside the result
+ * a negative return value means the piece -result has no possible position
+ * inside the result.
  */
 int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int rangeMax) {
 
@@ -454,13 +454,13 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
   /* find the symmetry breaker
    *
    * OK, what idea is behind this: we try to find as few double solutions as possible
-   * because we don't want to fist search them and later on discard them because they are
-   * double, so what do we do to prevent double solutions?
+   * because we don't want to first search them and later on discard them because they are
+   * double. So what do we do to prevent double solutions?
    *
    * Select one piece and remove rotations from this piece so that we don't even try to
    * place this piece in all possible positions. But which rotations need to be removed?
    * This depends on the symmetries that are present in the result and the symmetries
-   * that are present in the piece
+   * that are present in the piece.
    */
   symmetries_t resultSym = result->selfSymmetries();
   const gridType_c * gt = problem.getPuzzle().getGridType();
@@ -468,18 +468,18 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
   unsigned int symBreakerShape = 0xFFFFFFFF;
 
   /* so, if we have just the self-symmetry in the result, everything needs to be tried
-   * and not rotations can be removed
+   * and no rotations can be removed.
    */
   if (!unSymmetric(resultSym)) {
 
     /* now we try to find the most "suitable" piece for our rotation removal. What is
      * suitable? Suitable is the piece shape that has the least common symmetries with
-     * the result and that has the fewest pieces
+     * the result and that has the smallest maximum uses.
      *
-     * FIXME: if there is more than one suitable piece, select the one with the most
-     * placements, this will gain us a little (or even bigger) speed-up
-     * as its a difference if we select a piece that has only one placement anyway
-     * or select one with 400 placements of which 23/24th can be dropped
+     * FIXME: if there is more than one suitable piece, select the one with the
+     * most placements, this will gain us a little (or even bigger) speed-up as
+     * it's a difference if we select a piece that has only one placement
+     * anyway or select one with 400 placements of which 23/24th can be dropped.
      */
     unsigned int symBreakerPiece = 0;
     unsigned int pc = problem.getPartMaximum(0);
@@ -511,7 +511,7 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
 
     if (tmp || (problem.getPartMaximum(symBreakerShape) > 1) || pieceRanges) {
 
-      // we can not use the symmetry breaker shape, if there is more than one piece
+      // we can not use the symmetry breaker shape if there is more than one piece
       // of this shape in the problem
       if (pieceRanges || problem.getPartMaximum(symBreakerShape) > 1) {
         symBreakerShape = 0xFFFFFFFF;
@@ -522,11 +522,11 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
     }
 
     if (sym->symmetryContainsMirror(resultSym)) {
-      /* we need to to the mirror check here, and initialise the mirror
+      /* we need to do the mirror check here, and initialise the mirror
        * structure, otherwise no mirror check will be done
        */
 
-      /* so, we need to find out which case this puzzle is, depending on the pieces
+      /* so, we need to find out which case this puzzle is, depending on the pieces:
        * 1) all pieces contain mirror symmetries -> check mirrors, but no pairs
        * 2) as least one piece has no mirror symmetries
        *   2a) all pieces with no mirror symmetries have a mirror partner -> check mirrors, find pairs
@@ -601,9 +601,9 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
       // TODO: also add when piece ranges are used
       if (mirrorCheck || pieceRanges) {
         /* all the shapes are either self mirroring or have a mirror pair
-         * so we create the mirror structure and we do the mirror check
-         * we also need to that when ranges are used because the final solution
-         * might use only mirrorable pieces and then we need this information
+         * so we create the mirror structure and we do the mirror check.
+         * We also need to do that when ranges are used because the final solution
+         * might use only mirrorable pieces and then we need this information.
          */
         mirrorInfo_c * mir = new mirrorInfo_c();
 
@@ -623,31 +623,31 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
   /* even though the matrix has a column for each result voxel and each piece we leave out
    * the VARIABLE voxels in the ring list of the header. This is to avoid selecting these
    * columns for filling. The columns for the VARIABLE voxels are only there to make sure
-   * these voxels are only used once
+   * these voxels are only used once.
    */
 
   voxel_c ** cache = new voxel_c *[sym->getNumTransformationsMirror()];
 
-  /* now we insert one shape after another */
+  /* insert one shape after another */
   for (unsigned int pc = 0; pc < problem.getNumberOfParts(); pc++) {
 
     reducePiece = pc;
 
-    // setup weight values so that they do fit the number of pieces for this
+    // setup weight values so that they fit the number of pieces for this
     // shape
     max[pc+1] = problem.getPartMaximum(pc);
     min[pc+1] = problem.getPartMinimum(pc);
 
     unsigned int voxels = problem.getPartShape(pc)->countState(voxel_c::VX_FILLED);
 
-    /* this array contains all the pieces found so far, this will help us
+    /* this array contains all the pieces found so far. This will help us
      * to not add two times the same piece to the structure */
     unsigned int cachefill = 0;
     unsigned int placements = 0;
 
-    /* go through all possible rotations of the piece
-     * if shape is new to cache, add it to the cache and also
-     * add the shape to the matrix, in all positions that it fits
+    /* go through all possible rotations of the piece.
+     * If shape is new to cache, add it to the cache and also
+     * add the shape to the matrix in all positions that it fits
      */
     for (unsigned int rot = 0; rot < sym->getNumTransformations(); rot++) {
 
@@ -668,7 +668,7 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
                 int piecenode = AddPieceNode(pc, rot, x+rotation->getHx(), y+rotation->getHy(), z+rotation->getHz());
                 placements++;
 
-                /* now add the used cubes of the piece */
+                /* add the used cubes of the piece */
                 for (unsigned int pz = rotation->boundZ1(); pz <= rotation->boundZ2(); pz++)
                   for (unsigned int py = rotation->boundY1(); py <= rotation->boundY2(); py++)
                     for (unsigned int px = rotation->boundX1(); px <= rotation->boundX2(); px++)
@@ -700,7 +700,7 @@ int assembler_1_c::prepare(bool hasRange, unsigned int rangeMin, unsigned int ra
 
     for (unsigned int i = 0; i < cachefill; i++)  delete cache[i];
 
-    /* check, if the current piece has at least one placement */
+    /* check if the current piece has at least one placement */
     if (placements == 0 && problem.getPartMinimum(pc) > 0)
     {
       delete [] cache;
@@ -766,7 +766,7 @@ assembler_1_c::errState assembler_1_c::createMatrix(bool keepMirror, bool keepRo
   /* in some cases it is useful to count the number of blocks the range pieces contribute
    * this is calculated here
    *
-   * the result will contain between res_total-res_vari   and res_total voxels
+   * the result will contain between res_total-res_vari and res_total voxels
    * now we can subtract all voxels contributed by fixed placed pieces (with no range)
    * and get the range of voxels that must be occupied by the range pieces
    *
@@ -924,7 +924,7 @@ void assembler_1_c::reduce(void) {
   unsigned int row_rem = 0;
   unsigned int col_rem = clumpify();
 
-  /* this is a quick impossible row removal code, is is not at thorough
+  /* this is a quick impossible row removal code, it is not as thorough
    * as the code below but way faster and it is used to quickly remove
    * obviously impossible rows
    *
@@ -1144,15 +1144,12 @@ bool assembler_1_c::open_column_conditions_fulfillable(void) {
   return true;
 }
 
-
 static bool betterParams(int n_sum, int /*n_min*/, int n_max, int o_sum, int /*o_min*/, int o_max) {
 
-  // we need to find that column that
-  // will result in the fewest number of possibilities fo
-  // fulfill the column condition. It is not simple to find that
-  // in the old version it was simple the number of rows (sum)
-  // what was used, now something a bit more scientific
-
+  // we need to find that column that will result in the fewest number of
+  // possibilities to fulfill the column condition. It is not simple to find
+  // that. In in assembler_0 it's simple: the number of rows (sum) that was
+  // used; for asssembler_1 we something a bit more scientific.
 
 //  if (n_min < 0) n_min = 0;
 //  if (o_min < 0) o_min = 0;
@@ -1267,7 +1264,7 @@ void assembler_1_c::hiderows(unsigned int row) {
     // this can be sped up by sorting the entries and stopping removal
     // as soon as we reach a valid value, but we have to start from the top
     // we only need to check columns that have a non zero value in the current row
-    // as ony those weights have changed
+    // as only those weights have changed
 
     // now check all rows of this column for too big weights
     for (int rr = down[col]; rr != col; rr = down[rr])
@@ -1817,7 +1814,7 @@ assembler_c::errState assembler_1_c::setPosition(const char * string, const char
   pos += stringToVector(string+pos, col_choices_completed);     if (pos >= len) return ERR_CAN_NOT_RESTORE_SYNTAX;
   pos += stringToVector(string+pos, col_choices_total);
 
-  // not we need to restore the matrix to the right state
+  // now we need to restore the matrix to the right state
 
   unsigned int column_stack_pos = 0;
   unsigned int col, row;
@@ -1949,9 +1946,6 @@ void assembler_1_c::debug_step(unsigned long num) {
 #endif
 
 bool assembler_1_c::canHandle(const problem_c &) {
-
   // right now there are no limits
-
   return true;
 }
-
