@@ -1597,8 +1597,6 @@ int voxelFrame_c::handle(int event) {
     rotater->drag(Fl::event_x(), Fl::event_y());
     redraw();
 
-    do_callback();
-
     return 1;
 
   case FL_RELEASE:
