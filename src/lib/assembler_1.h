@@ -156,9 +156,6 @@ private:
   errState errorsState;
   int errorsParam;
 
-  /* now this isn't hard to guess, is it? */
-  unsigned int piecenumber;
-
   /* the message object that gets called with the solutions as param */
   assembler_cb * asm_bc;
 
@@ -244,8 +241,6 @@ protected:
    * call-back class
    */
   assembler_cb * getCallback(void) { return asm_bc; }
-
-  unsigned int getPiecenumber(void) { return piecenumber; }
 
   /* call this function if you think that there might be
    * rotated assemblies found. Here a description of how the whole aspect of

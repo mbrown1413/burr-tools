@@ -724,9 +724,6 @@ assembler_1_c::errState assembler_1_c::createMatrix(bool keepMirror, bool keepRo
   if (!canHandle(problem))
     return ERR_PUZZLE_UNHANDABLE;
 
-  /* get and save piece number of puzzle */
-  piecenumber = problem.getNumberOfPieces();
-
   /* count the filled and variable units */
   unsigned int res_vari = getResultShape(problem)->countState(voxel_c::VX_VARIABLE);
   unsigned int res_total = getResultShape(problem)->countState(voxel_c::VX_FILLED) + res_vari;
