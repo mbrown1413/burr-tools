@@ -30,7 +30,7 @@ dist_doc_DATA += examples/FourPieceTetrahedron.xmpuzzle
 dist_doc_DATA += examples/DemoMirrorParadox.xmpuzzle
 dist_doc_DATA += examples/DemoPieceGenerator.xmpuzzle
 dist_doc_DATA += burricons.ico
-dist_doc_DATA += AUTHORS COPYING README NEWS ChangeLog COPYRIGHT
+dist_doc_DATA += AUTHORS COPYING README.md NEWS ChangeLog COPYRIGHT
 
 abs_builddir = @abs_builddir@
 win32dir = $(PACKAGE)-$(VERSION)-win32
@@ -56,3 +56,5 @@ dist-win32: all
 
 Makefile: Makefile.am configure.ac src/Makefile.am
 	./bootstrap
+
+README: README.md
