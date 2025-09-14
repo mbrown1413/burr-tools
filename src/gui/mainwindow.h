@@ -34,6 +34,7 @@ class disasmToMoves_c;
 class gridType_c;
 class guiGridType_c;
 class layouter_c;
+class UndoManager_c;
 
 class PieceSelector;
 class ProblemSelector;
@@ -68,8 +69,8 @@ class mainWindow_c : public LFl_Double_Window {
   disasmToMoves_c * disassemble;
   solveThread_c *assmThread;
   bool SolutionEmpty;
-  bool changed;
   int editSymmetries;
+  UndoManager_c * undoManager;
 
   bool expertMode;
 
@@ -271,6 +272,8 @@ public:
   void cb_Load_Ps3d(void);
   void cb_Save(void);
   void cb_SaveAs(void);
+  void cb_Undo(void);
+  void cb_Redo(void);
   void cb_Convert(void);
   void cb_AssembliesToShapes(void);
   void cb_Quit(void);

@@ -49,6 +49,7 @@
 #include "vectorexportwindow.h"
 #include "convertwindow.h"
 #include "assmimportwindow.h"
+#include "undomanager.h"
 
 #include "LFl_Tile.h"
 
@@ -140,7 +141,7 @@ void mainWindow_c::cb_AddColor(void) {
       puzzle->getProblem(p)->allowPlacement(col, col);
 
     colorSelector->setSelection(puzzle->colorNumber());
-    changed = true;
+    undoManager->recordState(puzzle);
     View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
     updateInterface();
   }
@@ -162,7 +163,7 @@ void mainWindow_c::cb_RemoveColor(void) {
 
     colorSelector->setSelection(current);
 
-    changed = true;
+    undoManager->recordState(puzzle);
     View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
     activateShape(PcSel->getSelection());
     updateInterface();
@@ -179,7 +180,7 @@ void mainWindow_c::cb_ChangeColor(void) {
     puzzle->getColor(colorSelector->getSelection()-1, &r, &g, &b);
     if (fl_color_chooser("Change colour", r, g, b)) {
       puzzle->changeColor(colorSelector->getSelection()-1, r, g, b);
-      changed = true;
+      undoManager->recordState(puzzle);
       View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
       updateInterface();
     }
@@ -197,7 +198,7 @@ void mainWindow_c::cb_NewShape(void) {
   pieceEdit->setZ(0);
   updateInterface();
   StatPieceInfo(PcSel->getSelection());
-  changed = true;
+  undoManager->recordState(puzzle);
 }
 
 static void cb_DeleteShape_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_DeleteShape(); }
@@ -221,7 +222,7 @@ void mainWindow_c::cb_DeleteShape(void) {
     updateInterface();
     StatPieceInfo(PcSel->getSelection());
 
-    changed = true;
+    undoManager->recordState(puzzle);
 
   } else
 
@@ -237,7 +238,7 @@ void mainWindow_c::cb_CopyShape(void) {
   if (current < puzzle->getNumberOfShapes()) {
 
     PcSel->setSelection(puzzle->addShape(puzzle->getGridType()->getVoxel(puzzle->getShape(current))));
-    changed = true;
+    undoManager->recordState(puzzle);
 
     updateInterface();
     StatPieceInfo(PcSel->getSelection());
@@ -257,7 +258,7 @@ void mainWindow_c::cb_NameShape(void) {
 
     if (name) {
       puzzle->getShape(PcSel->getSelection())->setName(name);
-      changed = true;
+      undoManager->recordState(puzzle);
       updateInterface();
     }
   }
@@ -271,7 +272,7 @@ void mainWindow_c::cb_WeightChange(int by) {
 
     voxel_c * v = puzzle->getShape(PcSel->getSelection());
     v->setWeight(v->getWeight() + by);
-    changed = true;
+    undoManager->recordState(puzzle);
     updateInterface();
   }
 }
@@ -340,7 +341,7 @@ void mainWindow_c::cb_TransformPiece(void) {
   StatPieceInfo(PcSel->getSelection());
   activateShape(PcSel->getSelection());
 
-  changed = true;
+  undoManager->recordState(puzzle);
 }
 
 static void cb_EditSym_stub(Fl_Widget* o, void* v) {
@@ -463,7 +464,7 @@ void mainWindow_c::cb_pieceEdit(VoxelEditGroup_c* o) {
     View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
     StatPieceInfo(PcSel->getSelection());
     changeShape(PcSel->getSelection());
-    changed = true;
+    undoManager->recordState(puzzle);
     break;
   }
 
@@ -480,7 +481,7 @@ void mainWindow_c::cb_NewProblem(void) {
 
   problemSelector->setSelection(prob);
 
-  changed = true;
+  undoManager->recordState(puzzle);
   updateInterface();
   activateProblem(problemSelector->getSelection());
   StatProblemInfo(problemSelector->getSelection());
@@ -493,7 +494,7 @@ void mainWindow_c::cb_DeleteProblem(void) {
 
     puzzle->removeProblem(problemSelector->getSelection());
 
-    changed = true;
+    undoManager->recordState(puzzle);
 
     while ((problemSelector->getSelection() >= puzzle->getNumberOfProblems()) &&
            (problemSelector->getSelection() > 0))
@@ -516,7 +517,7 @@ void mainWindow_c::cb_CopyProblem(void) {
     unsigned int prob = puzzle->addProblem(puzzle->getProblem(problemSelector->getSelection()));
     problemSelector->setSelection(prob);
 
-    changed = true;
+    undoManager->recordState(puzzle);
     updateInterface();
     activateProblem(problemSelector->getSelection());
     StatProblemInfo(problemSelector->getSelection());
@@ -534,7 +535,7 @@ void mainWindow_c::cb_RenameProblem(void) {
     if (name) {
 
       puzzle->getProblem(problemSelector->getSelection())->setName(name);
-      changed = true;
+      undoManager->recordState(puzzle);
       updateInterface();
       activateProblem(problemSelector->getSelection());
     }
@@ -550,7 +551,7 @@ void mainWindow_c::cb_ProblemExchange(int with) {
 
   if ((current < puzzle->getNumberOfProblems()) && (other < puzzle->getNumberOfProblems())) {
     puzzle->exchangeProblems(current, other);
-    changed = true;
+    undoManager->recordState(puzzle);
     problemSelector->setSelection(other);
   }
 }
@@ -564,7 +565,7 @@ void mainWindow_c::cb_ShapeExchange(int with) {
 
   if ((current < puzzle->getNumberOfShapes()) && (other < puzzle->getNumberOfShapes())) {
     puzzle->exchangeShapes(current, other);
-    changed = true;
+    undoManager->recordState(puzzle);
     PcSel->setSelection(other);
   }
 }
@@ -589,7 +590,7 @@ void mainWindow_c::cb_ProbShapeExchange(int with) {
 
   if ((current < pr->getNumberOfParts()) && (other < pr->getNumberOfParts())) {
     pr->exchangeParts(current, other);
-    changed = true;
+    undoManager->recordState(puzzle);
     updateInterface();
     activateProblem(problemSelector->getSelection());
   }
@@ -628,7 +629,7 @@ void mainWindow_c::cb_ShapeToResult(void) {
   StatProblemInfo(prob);
   updateInterface();
 
-  changed = true;
+  undoManager->recordState(puzzle);
 }
 
 static void cb_ShapeSel_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_SelectProblemShape(); }
@@ -661,7 +662,7 @@ void mainWindow_c::cb_AddShapeToProblem(void) {
 
   unsigned int prob = problemSelector->getSelection();
 
-  changed = true;
+  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
 
   problem_c * pr = puzzle->getProblem(prob);
@@ -685,7 +686,7 @@ void mainWindow_c::cb_AddAllShapesToProblem(void) {
 
   unsigned int prob = problemSelector->getSelection();
 
-  changed = true;
+  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
 
   problem_c * pr = puzzle->getProblem(prob);
@@ -726,7 +727,7 @@ void mainWindow_c::cb_RemoveShapeFromProblem(void) {
   if (pr->getShapeMinimum(shape) > 0) pr->setShapeMinimum(shape, pr->getShapeMinimum(shape)-1);
   if (pr->getShapeMaximum(shape) > 0) pr->setShapeMaximum(shape, pr->getShapeMaximum(shape)-1);
 
-  changed = true;
+  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
 
@@ -755,7 +756,7 @@ void mainWindow_c::cb_SetShapeMinimumToZero(void) {
 
   pr->setShapeMinimum(shape, 0);
 
-  changed = true;
+  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
 
@@ -780,7 +781,7 @@ void mainWindow_c::cb_RemoveAllShapesFromProblem(void) {
   for (unsigned int i = 0; i < puzzle->getNumberOfShapes(); i++)
     pr->setShapeMaximum(i, 0);
 
-  changed = true;
+  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
 
@@ -814,7 +815,7 @@ void mainWindow_c::cb_ShapeGroup(void) {
      * through the list and remove entries of zero count */
     PiecesCountList->redraw();
     PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
-    changed = true;
+    undoManager->recordState(puzzle);
     activateProblem(problemSelector->getSelection());
     StatProblemInfo(problemSelector->getSelection());
     updateInterface();
@@ -905,7 +906,7 @@ void mainWindow_c::cb_AllowColor(void) {
   else
     pr->allowPlacement(colconstrList->getSelection()+1,
                        colorAssignmentSelector->getSelection()+1);
-  changed = true;
+  undoManager->recordState(puzzle);
   changeProblem(problemSelector->getSelection());
   updateInterface();
 }
@@ -928,7 +929,7 @@ void mainWindow_c::cb_DisallowColor(void) {
     pr->disallowPlacement(colconstrList->getSelection()+1,
                           colorAssignmentSelector->getSelection()+1);
 
-  changed = true;
+  undoManager->recordState(puzzle);
   changeProblem(problemSelector->getSelection());
   updateInterface();
 }
@@ -964,7 +965,7 @@ void mainWindow_c::cb_BtnStart(bool prep_only) {
   cb_BtnCont(prep_only);
 
   updateInterface();
-  changed = true;
+  undoManager->recordState(puzzle);
 }
 
 static void cb_BtnCont_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_BtnCont(false); }
@@ -1016,7 +1017,7 @@ void mainWindow_c::cb_BtnCont(bool prep_only) {
   } else {
 
     updateInterface();
-    changed = true;
+    undoManager->recordState(puzzle);
   }
 }
 
@@ -1087,7 +1088,7 @@ void mainWindow_c::cb_DeleteSolutions(unsigned int which) {
 
   unsigned int cnt;
 
-  changed = true;
+  undoManager->recordState(puzzle);
 
   switch (which) {
   case 0:
@@ -1149,7 +1150,7 @@ void mainWindow_c::cb_DeleteDisasm(void) {
 
   pr->getSavedSolution(sol)->removeDisassembly();
 
-  changed = true;
+  undoManager->recordState(puzzle);
 
   activateSolution(prob, (int)SolutionSel->value()-1);
   updateInterface();
@@ -1167,7 +1168,7 @@ void mainWindow_c::cb_DeleteAllDisasm(void) {
   for (unsigned int i = 0; i < pr->getNumberOfSavedSolutions(); i++)
     pr->getSavedSolution(i)->removeDisassembly();
 
-  changed = true;
+  undoManager->recordState(puzzle);
 
   activateSolution(prob, (int)SolutionSel->value()-1);
   updateInterface();
@@ -1196,7 +1197,7 @@ void mainWindow_c::cb_AddDisasm(void) {
 
   separation_c * d = dis->disassemble(pr->getSavedSolution(sol)->getAssembly());
 
-  changed = true;
+  undoManager->recordState(puzzle);
 
   if (d)
     pr->getSavedSolution(sol)->setDisassembly(d);
@@ -1222,7 +1223,7 @@ void mainWindow_c::cb_AddAllDisasm(bool all) {
 
   problem_c * pr = puzzle->getProblem(prob);
 
-  changed = true;
+  undoManager->recordState(puzzle);
 
   disassembler_c * dis = new disassembler_0_c(*pr);
 
@@ -1289,7 +1290,7 @@ void mainWindow_c::cb_3dClick(void) {
       StatPieceInfo(PcSel->getSelection());
       changeShape(PcSel->getSelection());
       redraw();
-      changed = true;
+      undoManager->recordState(puzzle);
 
     } else if (Fl::event_shift() || Fl::event_alt()) {
 
@@ -1323,7 +1324,7 @@ void mainWindow_c::cb_3dClick(void) {
             changeShape(PcSel->getSelection());
             activateShape(PcSel->getSelection());
             redraw();
-            changed = true;
+            undoManager->recordState(puzzle);
           }
         }
       }
@@ -1360,7 +1361,7 @@ void mainWindow_c::cb_New(void) {
 
   if (threadStopped()) {
 
-    if (changed)
+    if (undoManager->isChanged())
       if (fl_choice("Puzzle changed are you sure?", "Cancel", "New Puzzle", 0) == 0)
         return;
 
@@ -1378,7 +1379,7 @@ void mainWindow_c::cb_New(void) {
       label("BurrTools - unknown");
     }
 
-    changed = false;
+    undoManager->loadNew(puzzle);
 
     StatusLine->setText("");
     updateInterface();
@@ -1391,7 +1392,7 @@ void mainWindow_c::cb_Load(void) {
 
   if (threadStopped()) {
 
-    if (changed)
+    if (undoManager->isChanged())
       if (fl_choice("Puzzle changed are you sure?", "Cancel", "Load", 0) == 0)
         return;
 
@@ -1406,7 +1407,7 @@ void mainWindow_c::cb_Load_Ps3d(void) {
 
   if (threadStopped()) {
 
-    if (changed)
+    if (undoManager->isChanged())
       if (fl_choice("Puzzle changed are you sure?", "Cancel", "Load", 0) == 0)
         return;
 
@@ -1437,7 +1438,7 @@ void mainWindow_c::cb_Load_Ps3d(void) {
       activateShape(PcSel->getSelection());
       StatPieceInfo(PcSel->getSelection());
 
-      changed = false;
+      undoManager->loadNew(puzzle);
     }
   }
 }
@@ -1461,7 +1462,7 @@ void mainWindow_c::cb_Save(void) {
       if (!ostr)
         fl_alert("puzzle NOT saved!!");
       else
-        changed = false;
+        undoManager->markSaved();
     }
   }
 }
@@ -1485,7 +1486,7 @@ void mainWindow_c::cb_Convert(void) {
       ReplacePuzzle(p);
       updateInterface();
       activateShape(0);
-      changed = true;
+      undoManager->recordState(puzzle);
     }
   }
 }
@@ -1606,7 +1607,7 @@ void mainWindow_c::cb_AssembliesToShapes(void) {
       }
     }
 
-    changed = true;
+    undoManager->recordState(puzzle);
     PiecesCountList->redraw();
 
     updateInterface();
@@ -1644,7 +1645,7 @@ void mainWindow_c::cb_SaveAs(void) {
         if (!ostr)
           fl_alert("puzzle NOT saved!!!");
         else
-          changed = false;
+          undoManager->markSaved();
 
         if (fname) delete [] fname;
         fname = new char[strlen(f2)+1];
@@ -1662,9 +1663,47 @@ void mainWindow_c::cb_SaveAs(void) {
   }
 }
 
+static void cb_Undo_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_Undo(); }
+void mainWindow_c::cb_Undo(void) {
+  puzzle_c * newPuzzle = undoManager->undo();
+  if (!newPuzzle) {
+    StatusLine->setText("Already at oldest change, cannot undo");
+    return;
+  }
+
+  ReplacePuzzle(newPuzzle);
+  updateInterface();
+
+  if (TaskSelectionTab->value() == TabPieces) {
+    View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
+  }
+  redraw();
+
+  StatusLine->setText("Performed undo");
+}
+
+static void cb_Redo_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_Redo(); }
+void mainWindow_c::cb_Redo(void) {
+  puzzle_c * newPuzzle = undoManager->redo();
+  if (!newPuzzle) {
+    StatusLine->setText("Already at newest change, cannot redo");
+    return;
+  }
+
+  ReplacePuzzle(newPuzzle);
+  updateInterface();
+
+  if (TaskSelectionTab->value() == TabPieces) {
+    View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
+  }
+  redraw();
+
+  StatusLine->setText("Performed redo");
+}
+
 static void cb_Quit_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->hide(); }
 void mainWindow_c::hide(void) {
-  if ((!changed) || fl_choice("Puzzle changed do you want to quit and loose the changes?", "Cancel", "Quit", 0))
+  if ((!undoManager->isChanged()) || fl_choice("Puzzle changed do you want to quit and loose the changes?", "Cancel", "Quit", 0))
     Fl_Double_Window::hide();
 }
 
@@ -1686,7 +1725,7 @@ void mainWindow_c::cb_Coment(void) {
 
   if (win.saveChanges()) {
     puzzle->setComment(win.getText());
-    changed = true;
+    undoManager->recordState(puzzle);
   }
 }
 
@@ -1744,7 +1783,7 @@ void mainWindow_c::cb_StatusWindow(void) {
     again = w.getAgain();
 
     if (again)
-      changed = true;
+      undoManager->recordState(puzzle);
 
   } while (again);
 
@@ -1929,7 +1968,7 @@ bool mainWindow_c::tryToLoad(const char * f) {
   StatPieceInfo(PcSel->getSelection());
   View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
 
-  changed = false;
+  undoManager->loadNew(puzzle);
 
   // check for a started assemblies, and warn user about it
   bool containsStarted = false;
@@ -2010,6 +2049,8 @@ Fl_Menu_Item mainWindow_c::menu_MainMenu[] = {
     {"Import",         0, cb_Load_Ps3d_stub,   0, 0, 0, 0, 14, 56},
     {"Save",    FL_F + 2, cb_Save_stub,        0, 0, 0, 0, 14, 56},
     {"Save As",        0, cb_SaveAs_stub,      0, FL_MENU_DIVIDER, 0, 0, 14, 56},
+    {"Undo", FL_CTRL+'z', cb_Undo_stub,        0, 0, 0, 0, 14, 56},
+    {"Redo", FL_CTRL+'y', cb_Redo_stub,        0, FL_MENU_DIVIDER, 0, 0, 14, 56},
     {"Convert",        0, cb_Convert_stub,     0, 0, 0, 0, 14, 56},
     {"Import Assms",   0, cb_AssembliesToShapes_stub,     0, 0, 0, 0, 14, 56},
     {"Quit",           0, cb_Quit_stub,        0, 0, 3, 0, 14, 56},
@@ -3726,7 +3767,8 @@ mainWindow_c::mainWindow_c(gridType_c * gt) : LFl_Double_Window(true) {
 
   puzzle = new puzzle_c(gt);
   ggt = new guiGridType_c(puzzle->getGridType());
-  changed = false;
+  undoManager = new UndoManager_c();
+  undoManager->loadNew(puzzle);
 
   label("BurrTools - unknown");
   user_data((void*)(this));
@@ -3795,6 +3837,7 @@ mainWindow_c::~mainWindow_c() {
   }
 
   delete puzzle;
+  delete undoManager;
 
   if (fname) {
     delete [] fname;

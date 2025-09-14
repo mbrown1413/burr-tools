@@ -8,6 +8,7 @@ For upstream BurrTools, see: [github.com/burr-tools/burr-tools](https://github.c
 ## Notable Changes
 
 Features:
+* Undo / redo
 * Improvements to command line tool `burrTxt2`, including error checking and
   extra options.
 
