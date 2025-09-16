@@ -15,6 +15,7 @@ Features:
 Bugfixes:
 * Prevent accidental rapid voxel adding/removing in 3D view.
 * Fix crash when solve drop/limit is not strictly positive.
+* Fix keyboard shortcuts while on the "Puzzle" tab.
 
 Code cleanup:
 * Substantially clean up assembler_1 code so it's more understandable.
