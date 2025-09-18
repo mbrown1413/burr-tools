@@ -662,7 +662,6 @@ void mainWindow_c::cb_AddShapeToProblem(void) {
 
   unsigned int prob = problemSelector->getSelection();
 
-  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
 
   problem_c * pr = puzzle->getProblem(prob);
@@ -674,6 +673,8 @@ void mainWindow_c::cb_AddShapeToProblem(void) {
   activateProblem(problemSelector->getSelection());
   updateInterface();
   StatProblemInfo(problemSelector->getSelection());
+
+  undoManager->recordState(puzzle);
 }
 
 static void cb_AddAllShapesToProblem_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_AddAllShapesToProblem(); }
@@ -686,7 +687,6 @@ void mainWindow_c::cb_AddAllShapesToProblem(void) {
 
   unsigned int prob = problemSelector->getSelection();
 
-  undoManager->recordState(puzzle);
   PiecesCountList->redraw();
 
   problem_c * pr = puzzle->getProblem(prob);
@@ -703,6 +703,7 @@ void mainWindow_c::cb_AddAllShapesToProblem(void) {
 
   activateProblem(problemSelector->getSelection());
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
+  undoManager->recordState(puzzle);
   updateInterface();
   StatProblemInfo(problemSelector->getSelection());
 }
@@ -734,7 +735,6 @@ void mainWindow_c::cb_RemoveShapeFromProblem(void) {
   activateProblem(problemSelector->getSelection());
   StatProblemInfo(problemSelector->getSelection());
 }
-
 
 static void cb_SetShapeMinimumToZero_stub (Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_SetShapeMinimumToZero(); }
 void mainWindow_c::cb_SetShapeMinimumToZero(void) {
@@ -1088,8 +1088,6 @@ void mainWindow_c::cb_DeleteSolutions(unsigned int which) {
 
   unsigned int cnt;
 
-  undoManager->recordState(puzzle);
-
   switch (which) {
   case 0:
     cnt = pr->getNumberOfSavedSolutions();
@@ -1131,6 +1129,7 @@ void mainWindow_c::cb_DeleteSolutions(unsigned int which) {
     SolutionSel->value(pr->getNumberOfSavedSolutions());
 
   activateSolution(prob, (int)SolutionSel->value()-1);
+  undoManager->recordState(puzzle);
   updateInterface();
 }
 
@@ -1169,7 +1168,6 @@ void mainWindow_c::cb_DeleteAllDisasm(void) {
     pr->getSavedSolution(i)->removeDisassembly();
 
   undoManager->recordState(puzzle);
-
   activateSolution(prob, (int)SolutionSel->value()-1);
   updateInterface();
 }
@@ -1197,12 +1195,11 @@ void mainWindow_c::cb_AddDisasm(void) {
 
   separation_c * d = dis->disassemble(pr->getSavedSolution(sol)->getAssembly());
 
-  undoManager->recordState(puzzle);
-
   if (d)
     pr->getSavedSolution(sol)->setDisassembly(d);
 
   activateSolution(prob, (int)SolutionSel->value()-1);
+  undoManager->recordState(puzzle);
   updateInterface();
 
   delete dis;
@@ -1222,8 +1219,6 @@ void mainWindow_c::cb_AddAllDisasm(bool all) {
   }
 
   problem_c * pr = puzzle->getProblem(prob);
-
-  undoManager->recordState(puzzle);
 
   disassembler_c * dis = new disassembler_0_c(*pr);
 
@@ -1255,6 +1250,7 @@ void mainWindow_c::cb_AddAllDisasm(bool all) {
   delete w;
 
   activateSolution(prob, (int)SolutionSel->value()-1);
+  undoManager->recordState(puzzle);
   updateInterface();
 }
 
@@ -1271,7 +1267,6 @@ void mainWindow_c::cb_Status(void) {
 
 static void cb_3dClick_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_3dClick(); }
 void mainWindow_c::cb_3dClick(void) {
-
 
   if (TaskSelectionTab->value() == TabPieces) {
 
@@ -1371,7 +1366,7 @@ void mainWindow_c::cb_New(void) {
     while (w.visible())
       Fl::wait();
 
-    ReplacePuzzle(new puzzle_c(w.getGridType()));
+    ReplacePuzzle(new puzzle_c(w.getGridType()), false);
 
     if (fname) {
       delete [] fname;
@@ -1431,7 +1426,7 @@ void mainWindow_c::cb_Load_Ps3d(void) {
       snprintf(nm, 299, "BurrTools - %s", fname);
       label(nm);
 
-      ReplacePuzzle(newPuzzle);
+      ReplacePuzzle(newPuzzle, false);
       updateInterface();
 
       TaskSelectionTab->value(TabPieces);
@@ -1483,7 +1478,7 @@ void mainWindow_c::cb_Convert(void) {
 
     if (p)
     {
-      ReplacePuzzle(p);
+      ReplacePuzzle(p, false);
       updateInterface();
       activateShape(0);
       undoManager->recordState(puzzle);
@@ -1671,13 +1666,7 @@ void mainWindow_c::cb_Undo(void) {
     return;
   }
 
-  ReplacePuzzle(newPuzzle);
-  updateInterface();
-
-  if (TaskSelectionTab->value() == TabPieces) {
-    View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
-  }
-  redraw();
+  ReplacePuzzle(newPuzzle, true);
 
   StatusLine->setText("Performed undo");
 }
@@ -1690,13 +1679,7 @@ void mainWindow_c::cb_Redo(void) {
     return;
   }
 
-  ReplacePuzzle(newPuzzle);
-  updateInterface();
-
-  if (TaskSelectionTab->value() == TabPieces) {
-    View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
-  }
-  redraw();
+  ReplacePuzzle(newPuzzle, true);
 
   StatusLine->setText("Performed redo");
 }
@@ -1960,7 +1943,7 @@ bool mainWindow_c::tryToLoad(const char * f) {
   snprintf(nm, 299, "BurrTools - %s", fname);
   label(nm);
 
-  ReplacePuzzle(newPuzzle);
+  ReplacePuzzle(newPuzzle, false);
   updateInterface();
 
   TaskSelectionTab->value(TabPieces);
@@ -1989,7 +1972,16 @@ bool mainWindow_c::tryToLoad(const char * f) {
   return true;
 }
 
-void mainWindow_c::ReplacePuzzle(puzzle_c * NewPuzzle) {
+void mainWindow_c::ReplacePuzzle(puzzle_c * NewPuzzle, bool keepSelections) {
+  
+  // Save old selections to restore later
+  unsigned int selected_color = colorSelector->getSelection();
+  unsigned int selected_shape = PcSel->getSelection();
+  unsigned int selected_problem = problemSelector->getSelection();
+  unsigned int selected_color_assignment = colorAssignmentSelector->getSelection();
+  unsigned int selected_colconstrList = colconstrList->getSelection();
+  unsigned int selected_shapeAssignment = shapeAssignmentSelector->getSelection();
+  unsigned int selected_solutionProblem = solutionProblem->getSelection();
 
   // inform everybody
   colorSelector->setPuzzle(NewPuzzle);
@@ -2040,6 +2032,24 @@ void mainWindow_c::ReplacePuzzle(puzzle_c * NewPuzzle) {
 
   delete ggt;
   ggt = nggt;
+
+  if (keepSelections) {
+    colorSelector->setSelection(selected_color);
+    activateShape(selected_shape);
+    problemSelector->setSelection(selected_problem);
+    activateProblem(selected_problem);
+    colorAssignmentSelector->setSelection(selected_color_assignment);
+    colconstrList->setSelection(selected_colconstrList);
+    shapeAssignmentSelector->setSelection(selected_shapeAssignment);
+    solutionProblem->setSelection(selected_solutionProblem);
+
+    if (TaskSelectionTab->value() == TabPieces && puzzle->getNumberOfShapes() > 0) {
+      View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
+      redraw();
+    }
+
+    updateInterface();
+  }
 }
 
 Fl_Menu_Item mainWindow_c::menu_MainMenu[] = {

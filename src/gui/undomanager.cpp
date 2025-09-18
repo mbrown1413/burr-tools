@@ -64,7 +64,7 @@ puzzle_c * UndoManager_c::undo(void) {
 }
 
 puzzle_c * UndoManager_c::redo(void) {
-  if (currentState >= states.size()-1) { return NULL; }
+  if ((unsigned int) currentState >= states.size()-1) { return NULL; }
   currentState++;
 
   std::istringstream stateString(states[currentState]);

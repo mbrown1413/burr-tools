@@ -164,7 +164,7 @@ class mainWindow_c : public LFl_Double_Window {
   void changeProblem(unsigned int nr);
   void changeColor(unsigned int nr);
 
-  void ReplacePuzzle(puzzle_c * newPuzzle);
+  void ReplacePuzzle(puzzle_c * newPuzzle, bool keepSelections);
 
   void activateShape(unsigned int number);
   void activateProblem(unsigned int prob);
