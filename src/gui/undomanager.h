@@ -58,6 +58,16 @@ public:
   puzzle_c * redo();
 
   /**
+   * Returns true if there is something to undo.
+   */
+  bool canUndo(void);
+
+  /**
+   * Returns true if there is something to redo.
+   */
+  bool canRedo(void);
+
+  /**
    * Marks the current state as saved to disk, so isChanged() will return false.
    */
   void markSaved(void);

@@ -55,7 +55,7 @@ void UndoManager_c::recordState(puzzle_c * puzzle) {
 }
 
 puzzle_c * UndoManager_c::undo(void) {
-  if (currentState <= 0) { return NULL; }
+  if (!canUndo()) { return NULL; }
   currentState--;
 
   std::istringstream stateString(states[currentState]);
@@ -64,12 +64,20 @@ puzzle_c * UndoManager_c::undo(void) {
 }
 
 puzzle_c * UndoManager_c::redo(void) {
-  if ((unsigned int) currentState >= states.size()-1) { return NULL; }
+  if (!canRedo()) { return NULL; }
   currentState++;
 
   std::istringstream stateString(states[currentState]);
   xmlParser_c xml(stateString);
   return new puzzle_c(xml);
+}
+
+bool UndoManager_c::canUndo(void) {
+  return currentState > 0;
+}
+
+bool UndoManager_c::canRedo(void) {
+  return currentState >= 0 && currentState < (int) states.size()-1;
 }
 
 void UndoManager_c::markSaved(void) {
