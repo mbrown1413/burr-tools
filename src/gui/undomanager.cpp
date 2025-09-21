@@ -36,11 +36,11 @@ void UndoManager_c::loadNew(puzzle_c * puzzle) {
   savedState = -1;
   states.resize(0);
 
-  recordState(puzzle);
+  recordState(puzzle, "Loaded Puzzle");
   markSaved();
 }
 
-void UndoManager_c::recordState(puzzle_c * puzzle) {
+void UndoManager_c::recordState(puzzle_c * puzzle, std::string description) {
   std::ostringstream stateString;
   xmlWriter_c xml(stateString);
   puzzle->save(xml);
@@ -50,24 +50,29 @@ void UndoManager_c::recordState(puzzle_c * puzzle) {
   }
 
   states.resize(currentState+1);
-  states.push_back(stateString.str());
+  states.push_back({
+    .xml = stateString.str(),
+    .description = description,
+  });
   currentState = states.size()-1;
 }
 
-puzzle_c * UndoManager_c::undo(void) {
+puzzle_c * UndoManager_c::undo(std::string *description_out) {
   if (!canUndo()) { return NULL; }
+  *description_out = states[currentState].description;
   currentState--;
 
-  std::istringstream stateString(states[currentState]);
+  std::istringstream stateString(states[currentState].xml);
   xmlParser_c xml(stateString);
   return new puzzle_c(xml);
 }
 
-puzzle_c * UndoManager_c::redo(void) {
+puzzle_c * UndoManager_c::redo(std::string *description_out) {
   if (!canRedo()) { return NULL; }
   currentState++;
+  *description_out = states[currentState].description;
 
-  std::istringstream stateString(states[currentState]);
+  std::istringstream stateString(states[currentState].xml);
   xmlParser_c xml(stateString);
   return new puzzle_c(xml);
 }

@@ -141,7 +141,7 @@ void mainWindow_c::cb_AddColor(void) {
       puzzle->getProblem(p)->allowPlacement(col, col);
 
     colorSelector->setSelection(puzzle->colorNumber());
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Add color");
     View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
     updateInterface();
   }
@@ -163,7 +163,7 @@ void mainWindow_c::cb_RemoveColor(void) {
 
     colorSelector->setSelection(current);
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Remove color");
     View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
     activateShape(PcSel->getSelection());
     updateInterface();
@@ -180,7 +180,7 @@ void mainWindow_c::cb_ChangeColor(void) {
     puzzle->getColor(colorSelector->getSelection()-1, &r, &g, &b);
     if (fl_color_chooser("Change colour", r, g, b)) {
       puzzle->changeColor(colorSelector->getSelection()-1, r, g, b);
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Change color");
       View3D->getView()->showColors(puzzle, StatusLine->getColorMode());
       updateInterface();
     }
@@ -197,7 +197,7 @@ void mainWindow_c::cb_NewShape(void) {
     PcSel->setSelection(puzzle->addShape(ggt->defaultSize(), ggt->defaultSize(), ggt->defaultSize()));
   pieceEdit->setZ(0);
   StatPieceInfo(PcSel->getSelection());
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Add shape");
   updateInterface();
 }
 
@@ -221,7 +221,7 @@ void mainWindow_c::cb_DeleteShape(void) {
     PcSel->setSelection(current);
     StatPieceInfo(PcSel->getSelection());
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Delete shape");
     updateInterface();
 
   } else
@@ -240,7 +240,7 @@ void mainWindow_c::cb_CopyShape(void) {
     PcSel->setSelection(puzzle->addShape(puzzle->getGridType()->getVoxel(puzzle->getShape(current))));
 
     StatPieceInfo(PcSel->getSelection());
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Copy shape");
     updateInterface();
 
   } else
@@ -258,7 +258,7 @@ void mainWindow_c::cb_NameShape(void) {
 
     if (name) {
       puzzle->getShape(PcSel->getSelection())->setName(name);
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Name shape");
       updateInterface();
     }
   }
@@ -272,7 +272,7 @@ void mainWindow_c::cb_WeightChange(int by) {
 
     voxel_c * v = puzzle->getShape(PcSel->getSelection());
     v->setWeight(v->getWeight() + by);
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Change shape weight");
     updateInterface();
   }
 }
@@ -341,7 +341,7 @@ void mainWindow_c::cb_TransformPiece(void) {
   StatPieceInfo(PcSel->getSelection());
   activateShape(PcSel->getSelection());
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Transform shape");
   updateInterface();
 }
 
@@ -465,7 +465,7 @@ void mainWindow_c::cb_pieceEdit(VoxelEditGroup_c* o) {
     View3D->getView()->showSingleShape(puzzle, PcSel->getSelection());
     StatPieceInfo(PcSel->getSelection());
     changeShape(PcSel->getSelection());
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Edit shape");
     updateInterface();
     break;
   }
@@ -483,7 +483,7 @@ void mainWindow_c::cb_NewProblem(void) {
 
   problemSelector->setSelection(prob);
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "New problem");
   updateInterface();
   activateProblem(problemSelector->getSelection());
   StatProblemInfo(problemSelector->getSelection());
@@ -496,7 +496,7 @@ void mainWindow_c::cb_DeleteProblem(void) {
 
     puzzle->removeProblem(problemSelector->getSelection());
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Delete problem");
 
     while ((problemSelector->getSelection() >= puzzle->getNumberOfProblems()) &&
            (problemSelector->getSelection() > 0))
@@ -519,7 +519,7 @@ void mainWindow_c::cb_CopyProblem(void) {
     unsigned int prob = puzzle->addProblem(puzzle->getProblem(problemSelector->getSelection()));
     problemSelector->setSelection(prob);
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Copy problem");
     updateInterface();
     activateProblem(problemSelector->getSelection());
     StatProblemInfo(problemSelector->getSelection());
@@ -537,7 +537,7 @@ void mainWindow_c::cb_RenameProblem(void) {
     if (name) {
 
       puzzle->getProblem(problemSelector->getSelection())->setName(name);
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Rename problem");
       updateInterface();
       activateProblem(problemSelector->getSelection());
     }
@@ -554,7 +554,7 @@ void mainWindow_c::cb_ProblemExchange(int with) {
   if ((current < puzzle->getNumberOfProblems()) && (other < puzzle->getNumberOfProblems())) {
     puzzle->exchangeProblems(current, other);
     problemSelector->setSelection(other);
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Move problem");
     updateInterface();
   }
 }
@@ -569,7 +569,7 @@ void mainWindow_c::cb_ShapeExchange(int with) {
   if ((current < puzzle->getNumberOfShapes()) && (other < puzzle->getNumberOfShapes())) {
     puzzle->exchangeShapes(current, other);
     PcSel->setSelection(other);
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Move shape");
     updateInterface();
   }
 }
@@ -594,7 +594,7 @@ void mainWindow_c::cb_ProbShapeExchange(int with) {
 
   if ((current < pr->getNumberOfParts()) && (other < pr->getNumberOfParts())) {
     pr->exchangeParts(current, other);
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Move piece in problem");
     updateInterface();
     activateProblem(problemSelector->getSelection());
   }
@@ -632,7 +632,7 @@ void mainWindow_c::cb_ShapeToResult(void) {
   activateProblem(prob);
 
   StatProblemInfo(prob);
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Set result shape");
   updateInterface();
 }
 
@@ -677,7 +677,7 @@ void mainWindow_c::cb_AddShapeToProblem(void) {
   activateProblem(problemSelector->getSelection());
 
   StatProblemInfo(problemSelector->getSelection());
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Add shape to problem");
   updateInterface();
 }
 
@@ -707,7 +707,7 @@ void mainWindow_c::cb_AddAllShapesToProblem(void) {
 
   activateProblem(problemSelector->getSelection());
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Add all shapes to problem");
   updateInterface();
   StatProblemInfo(problemSelector->getSelection());
 }
@@ -732,7 +732,7 @@ void mainWindow_c::cb_RemoveShapeFromProblem(void) {
   if (pr->getShapeMinimum(shape) > 0) pr->setShapeMinimum(shape, pr->getShapeMinimum(shape)-1);
   if (pr->getShapeMaximum(shape) > 0) pr->setShapeMaximum(shape, pr->getShapeMaximum(shape)-1);
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Remove shape from problem");
   updateInterface();
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
@@ -761,7 +761,7 @@ void mainWindow_c::cb_SetShapeMinimumToZero(void) {
 
   pr->setShapeMinimum(shape, 0);
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Set shape minimum to zero");
   updateInterface();
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
@@ -787,7 +787,7 @@ void mainWindow_c::cb_RemoveAllShapesFromProblem(void) {
   for (unsigned int i = 0; i < puzzle->getNumberOfShapes(); i++)
     pr->setShapeMaximum(i, 0);
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Remove all shapes from problem");
   updateInterface();
   PiecesCountList->redraw();
   PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
@@ -822,8 +822,7 @@ void mainWindow_c::cb_ShapeGroup(void) {
      * through the list and remove entries of zero count */
     PiecesCountList->redraw();
     PcVis->setPuzzle(puzzle->getProblem(solutionProblem->getSelection()));
-    undoManager->recordState(puzzle);
-    updateInterface();
+    undoManager->recordState(puzzle, "Edit piece groups");
     activateProblem(problemSelector->getSelection());
     StatProblemInfo(problemSelector->getSelection());
     updateInterface();
@@ -914,7 +913,7 @@ void mainWindow_c::cb_AllowColor(void) {
   else
     pr->allowPlacement(colconstrList->getSelection()+1,
                        colorAssignmentSelector->getSelection()+1);
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Allow color placement");
   changeProblem(problemSelector->getSelection());
   updateInterface();
 }
@@ -937,7 +936,7 @@ void mainWindow_c::cb_DisallowColor(void) {
     pr->disallowPlacement(colconstrList->getSelection()+1,
                           colorAssignmentSelector->getSelection()+1);
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Disallow color placement");
   changeProblem(problemSelector->getSelection());
   updateInterface();
 }
@@ -971,9 +970,6 @@ void mainWindow_c::cb_BtnStart(bool prep_only) {
     puzzle->getShape(i)->initHotspot();
 
   cb_BtnCont(prep_only);
-
-  undoManager->recordState(puzzle);
-  updateInterface();
 }
 
 static void cb_BtnCont_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_BtnCont(false); }
@@ -1024,7 +1020,7 @@ void mainWindow_c::cb_BtnCont(bool prep_only) {
 
   } else {
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Start solving");
     updateInterface();
   }
 }
@@ -1137,7 +1133,7 @@ void mainWindow_c::cb_DeleteSolutions(unsigned int which) {
     SolutionSel->value(pr->getNumberOfSavedSolutions());
 
   activateSolution(prob, (int)SolutionSel->value()-1);
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Delete solutions");
   updateInterface();
 }
 
@@ -1157,7 +1153,7 @@ void mainWindow_c::cb_DeleteDisasm(void) {
 
   pr->getSavedSolution(sol)->removeDisassembly();
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Delete disassembly");
 
   activateSolution(prob, (int)SolutionSel->value()-1);
   updateInterface();
@@ -1175,7 +1171,7 @@ void mainWindow_c::cb_DeleteAllDisasm(void) {
   for (unsigned int i = 0; i < pr->getNumberOfSavedSolutions(); i++)
     pr->getSavedSolution(i)->removeDisassembly();
 
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Delete all disassemblies");
   activateSolution(prob, (int)SolutionSel->value()-1);
   updateInterface();
 }
@@ -1207,7 +1203,7 @@ void mainWindow_c::cb_AddDisasm(void) {
     pr->getSavedSolution(sol)->setDisassembly(d);
 
   activateSolution(prob, (int)SolutionSel->value()-1);
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Add disassembly");
   updateInterface();
 
   delete dis;
@@ -1258,7 +1254,7 @@ void mainWindow_c::cb_AddAllDisasm(bool all) {
   delete w;
 
   activateSolution(prob, (int)SolutionSel->value()-1);
-  undoManager->recordState(puzzle);
+  undoManager->recordState(puzzle, "Add disassemblies");
   updateInterface();
 }
 
@@ -1293,7 +1289,7 @@ void mainWindow_c::cb_3dClick(void) {
       StatPieceInfo(PcSel->getSelection());
       changeShape(PcSel->getSelection());
       redraw();
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Remove voxel from shape");
       updateInterface();
 
     } else if (Fl::event_shift() || Fl::event_alt()) {
@@ -1328,7 +1324,7 @@ void mainWindow_c::cb_3dClick(void) {
             changeShape(PcSel->getSelection());
             activateShape(PcSel->getSelection());
             redraw();
-            undoManager->recordState(puzzle);
+            undoManager->recordState(puzzle, "Add voxel to shape");
             updateInterface();
           }
         }
@@ -1490,7 +1486,7 @@ void mainWindow_c::cb_Convert(void) {
     {
       ReplacePuzzle(p, false);
       activateShape(0);
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Convert puzzle");
       updateInterface();
     }
   }
@@ -1612,7 +1608,7 @@ void mainWindow_c::cb_AssembliesToShapes(void) {
       }
     }
 
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Import assemblies as shapes");
     PiecesCountList->redraw();
 
     updateInterface();
@@ -1670,7 +1666,8 @@ void mainWindow_c::cb_SaveAs(void) {
 
 static void cb_Undo_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_Undo(); }
 void mainWindow_c::cb_Undo(void) {
-  puzzle_c * newPuzzle = undoManager->undo();
+  std::string description;
+  puzzle_c * newPuzzle = undoManager->undo(&description);
   if (!newPuzzle) {
     StatusLine->setText("Already at oldest change, cannot undo");
     return;
@@ -1678,12 +1675,14 @@ void mainWindow_c::cb_Undo(void) {
 
   ReplacePuzzle(newPuzzle, true);
 
-  StatusLine->setText("Performed undo");
+  std::string status = "Undo performed on: " + description;
+  StatusLine->setText(status.c_str());
 }
 
 static void cb_Redo_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_Redo(); }
 void mainWindow_c::cb_Redo(void) {
-  puzzle_c * newPuzzle = undoManager->redo();
+  std::string description;
+  puzzle_c * newPuzzle = undoManager->redo(&description);
   if (!newPuzzle) {
     StatusLine->setText("Already at newest change, cannot redo");
     return;
@@ -1691,7 +1690,8 @@ void mainWindow_c::cb_Redo(void) {
 
   ReplacePuzzle(newPuzzle, true);
 
-  StatusLine->setText("Performed redo");
+  std::string status = "Redo performed on: " + description;
+  StatusLine->setText(status.c_str());
 }
 
 static void cb_Quit_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->hide(); }
@@ -1718,7 +1718,7 @@ void mainWindow_c::cb_Coment(void) {
 
   if (win.saveChanges()) {
     puzzle->setComment(win.getText());
-    undoManager->recordState(puzzle);
+    undoManager->recordState(puzzle, "Edit comment");
     updateInterface();
   }
 }
@@ -1777,7 +1777,7 @@ void mainWindow_c::cb_StatusWindow(void) {
     again = w.getAgain();
 
     if (again)
-      undoManager->recordState(puzzle);
+      undoManager->recordState(puzzle, "Change status");
 
   } while (again);
 

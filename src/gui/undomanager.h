@@ -41,21 +41,26 @@ public:
   void loadNew(puzzle_c * puzzle);
 
   /**
-   * Saves the current state of the puzzle for undo.
+   * Saves the current state of the puzzle for undo. The given description
+   * should describe the change which was made from the last recorded state.
    */
-  void recordState(puzzle_c * puzzle);
+  void recordState(puzzle_c * puzzle, std::string description);
 
   /**
    * Returns the puzzle from the previous state in the undo history, and sets that
    * state as current. Returns NULL if there is nothing to undo.
+   * `description_out` will be set to a description of the change which was
+   * undone.
    */
-  puzzle_c * undo();
+  puzzle_c * undo(std::string *description_out);
 
   /**
    * Returns the puzzle from the next state in the undo history, and sets that state
    * as current. Returns NULL if there is nothing to redo.
+   * `description_out` will be set to a description of the change which was
+   * undone.
    */
-  puzzle_c * redo();
+  puzzle_c * redo(std::string *description_out);
 
   /**
    * Returns true if there is something to undo.
@@ -79,7 +84,12 @@ public:
 
 private:
 
-  std::vector<std::string> states;
+  typedef struct {
+    std::string xml;
+    std::string description;
+  } UndoState;
+
+  std::vector<UndoState> states;
   int currentState;
   int savedState;
 
