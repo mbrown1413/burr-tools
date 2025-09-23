@@ -27,6 +27,31 @@
 
 /**
  * Manages saving and loading states for undo and redo.
+ *
+ * There are a few thread safety issues to consider here:
+ *
+ * 1) We don't want to record states while the solve thread is running, since
+ * solutions could be added in the solve thread, and we don't want to undo
+ * those additions.
+ *
+ * 2) We can't undo or redo while the solve thread is running. Doing so could
+ * crash the solver thread due to changes in the puzzle (for example deleting a
+ * piece the solve thread was using). This is normally prevented by disabling
+ * edits in the GUI.
+ *
+ * 3) Calling recordState/undo/redo could also read or write the puzzle in the
+ * middle of an update from the solve thread, possibly at an inconsistent
+ * state.
+ *
+ * Here's how the user of this class (mainWindow_c) must handle thread safety:
+ *   * Do not call undo or redo while the solve thread is running.
+ *   * Be aware that recordState is a no-op if a problem is being solved in the
+ *     given puzzle. This is not usually a problem since the user can't make
+ *     most edits while the puzzle is being solved anyways.
+ *
+ * This leaves one quirk of how mainWindow_c uses this class: since it calls
+ * recordState at the end of solving, an undo after solving finishes will undo
+ * all changes made during the solve.
  */
 class UndoManager_c {
 

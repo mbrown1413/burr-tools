@@ -1017,10 +1017,7 @@ void mainWindow_c::cb_BtnCont(bool prep_only) {
     fl_message("Could not start the solving process, the thread creation failed, sorry.");
     delete assmThread;
     assmThread = 0;
-
   } else {
-
-    undoManager->recordState(puzzle, "Start solving");
     updateInterface();
   }
 }
@@ -1672,6 +1669,10 @@ void mainWindow_c::cb_Undo(void) {
     StatusLine->setText("Already at oldest change, cannot undo");
     return;
   }
+  if (assmThread) {
+    StatusLine->setText("Cannot undo while solving");
+    return;
+  }
 
   ReplacePuzzle(newPuzzle, true);
 
@@ -1685,6 +1686,10 @@ void mainWindow_c::cb_Redo(void) {
   puzzle_c * newPuzzle = undoManager->redo(&description);
   if (!newPuzzle) {
     StatusLine->setText("Already at newest change, cannot redo");
+    return;
+  }
+  if (assmThread) {
+    StatusLine->setText("Cannot redo while solving");
     return;
   }
 
@@ -2273,12 +2278,12 @@ void mainWindow_c::updateInterface(void) {
 
   // update the menu items activate state
 
-  if (undoManager->canUndo())
+  if (undoManager->canUndo() && !assmThread)
     menu_MainMenu[findMenuEntry("Undo")].activate();
   else
     menu_MainMenu[findMenuEntry("Undo")].deactivate(); 
 
-  if (undoManager->canRedo())
+  if (undoManager->canRedo() && !assmThread)
     menu_MainMenu[findMenuEntry("Redo")].activate();
   else
     menu_MainMenu[findMenuEntry("Redo")].deactivate(); 
@@ -2975,6 +2980,9 @@ void mainWindow_c::update(void) {
       delete assmThread;
       assmThread = 0;
     }
+
+    if (!assmThread)
+      undoManager->recordState(puzzle, "Finished solving");
 
     // update the window, either when the thread stopped and so the buttons need to
     // be updated, or then the thread works for the currently selected problem

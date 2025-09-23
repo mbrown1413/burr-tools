@@ -21,9 +21,23 @@
  */
 #include "undomanager.h"
 
+#include "../lib/puzzle.h"
+#include "../lib/problem.h"
 #include "../tools/xml.h"
 
 #include <sstream>
+
+/**
+ * Return true if any problem in the puzzle is currently being solved.
+ */
+static bool puzzleIsBeingSolved(puzzle_c *puzzle) {
+  for (unsigned int i=0; i<puzzle->getNumberOfProblems(); i++) {
+    if(puzzle->getProblem(i)->getSolveState() == SS_SOLVING) {
+      return true;
+    }
+  }
+  return false;
+}
 
 UndoManager_c::UndoManager_c(void) {
     currentState = -1;
@@ -41,6 +55,13 @@ void UndoManager_c::loadNew(puzzle_c * puzzle) {
 }
 
 void UndoManager_c::recordState(puzzle_c * puzzle, std::string description) {
+
+  // For thread safety, skip recording if a problem is being solved.
+  // See discussion of thread safety in undomanager.h.
+  if (puzzleIsBeingSolved(puzzle)) {
+    return;
+  }
+
   std::ostringstream stateString;
   xmlWriter_c xml(stateString);
   puzzle->save(xml);
