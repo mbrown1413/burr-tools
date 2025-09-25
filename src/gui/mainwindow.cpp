@@ -1268,6 +1268,7 @@ void mainWindow_c::cb_Status(void) {
 
 static void cb_3dClick_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_3dClick(); }
 void mainWindow_c::cb_3dClick(void) {
+  if (assmThread) return;
 
 
   if (TaskSelectionTab->value() == TabPieces) {
@@ -1727,6 +1728,7 @@ void mainWindow_c::cb_STLExport(void) {
 
 static void cb_StatusWindow_stub(Fl_Widget* /*o*/, void* v) { ((mainWindow_c*)v)->cb_StatusWindow(); }
 void mainWindow_c::cb_StatusWindow(void) {
+  if (!threadStopped()) return;
 
   bool again;
 
@@ -2208,6 +2210,11 @@ int mainWindow_c::findMenuEntry(const char * txt) {
 void mainWindow_c::updateInterface(void) {
 
   // update the menu items activate state
+
+  if (!assmThread)
+    menu_MainMenu[findMenuEntry("Convert")].activate();
+  else
+    menu_MainMenu[findMenuEntry("Convert")].deactivate(); 
 
   // there must be at least one shape before there is something to export...
   if (puzzle->getNumberOfShapes() > 0)
