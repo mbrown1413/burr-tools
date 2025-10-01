@@ -32,6 +32,7 @@
 #include <algorithm>
 
 #include <stdio.h>
+#include <iomanip>
 
 /** internal class of problem storing the grouping information of a shape */
 class group_c {
@@ -69,10 +70,49 @@ class part_c {
     std::vector<group_c> groups;
 };
 
+/* Given a time in milliseconds, convert it to a string in seconds with a decimal. */
+static std::ostringstream millisecondsToSecondsString(unsigned long ms) {
+    std::ostringstream timeString;
+
+    // use integer division and modulous to avoid converting to float, which
+    // could cause precision issues
+    timeString << ms / 1000;
+
+    unsigned long remainder = ms % 1000;
+    if (remainder) {
+      timeString << ".";
+      timeString << std::setw(3) << std::setfill('0');
+      timeString << remainder;
+    }
+
+    return timeString;
+}
+
+static unsigned long secondsStringToMilliseconds(const std::string & str) {
+    auto decimalIdx = str.find('.');
+
+    if (decimalIdx == std::string::npos) {
+      // No decimal, just use atoi
+      return atoi(str.c_str()) * 1000;
+    } else {
+      auto beforeDecimal = str.substr(0, decimalIdx);
+      auto afterDecimal = str.substr(decimalIdx + 1);
+
+      // Pad or truncate to 3 digits after decimal
+      afterDecimal += "000";
+      afterDecimal.erase(3);
+
+      return (
+        atoi(beforeDecimal.c_str()) * 1000 + 
+        atoi(afterDecimal.c_str())
+      );
+    }
+}
+
 problem_c::problem_c(puzzle_c & puz) :
   puzzle(puz), result(0xFFFFFFFF),
   assm(0),solveState(SS_UNSOLVED), numAssemblies(0),
-  numSolutions(0), usedTime(0), maxHoles(0xFFFFFFFF)
+  numSolutions(0), usedTimeMilliseconds(0), maxHoles(0xFFFFFFFF)
 {}
 
 problem_c::~problem_c(void) {
@@ -88,7 +128,7 @@ problem_c::~problem_c(void) {
 
 problem_c::problem_c(const problem_c * orig, puzzle_c & puz) :
   puzzle(puz), result(orig->result),
-  solveState(SS_UNSOLVED), numAssemblies(0), numSolutions(0), usedTime(0)
+  solveState(SS_UNSOLVED), numAssemblies(0), numSolutions(0), usedTimeMilliseconds(0)
 {
   assm = 0;
 
@@ -120,7 +160,7 @@ void problem_c::save(xmlWriter_c & xml) const
   {
     xml.newAttrib("assemblies", numAssemblies);
     xml.newAttrib("solutions", numSolutions);
-    xml.newAttrib("time", usedTime);
+    xml.newAttrib("time", millisecondsToSecondsString(usedTimeMilliseconds).str());
   }
 
   if (maxHoles != 0xFFFFFFFF)
@@ -217,7 +257,7 @@ problem_c::problem_c(puzzle_c & puz, xmlParser_c & pars) : puzzle(puz), result(0
 
   name = pars.getAttributeValue("name");
   solveState = SS_UNSOLVED;
-  numAssemblies = numSolutions = usedTime = 0;
+  numAssemblies = numSolutions = usedTimeMilliseconds = 0;
   maxHoles = 0xFFFFFFFF;
 
   std::string str = pars.getAttributeValue("maxHoles");
@@ -240,7 +280,7 @@ problem_c::problem_c(puzzle_c & puz, xmlParser_c & pars) : puzzle(puz), result(0
 
     str = pars.getAttributeValue("time");
     if (str.length())
-      usedTime = atoi(str.c_str());
+      usedTimeMilliseconds = secondsStringToMilliseconds(str);
   }
 
   unsigned int pieces = 0;
@@ -857,7 +897,7 @@ void problem_c::removeAllSolutions(void) {
   solveState = SS_UNSOLVED;
   numAssemblies = 0;
   numSolutions = 0;
-  usedTime = 0;
+  usedTimeMilliseconds = 0;
 }
 
 void problem_c::removeSolution(unsigned int sol) {
@@ -1019,5 +1059,5 @@ void problem_c::makeUnknown(void)
 
   numAssemblies = 0;
   numSolutions = 0;
-  usedTime = 0;
+  usedTimeMilliseconds = 0;
 }

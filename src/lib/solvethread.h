@@ -26,7 +26,7 @@
 #include "bt_assert.h"
 #include "thread.h"
 
-#include <time.h>
+#include <chrono>
 
 #define MAX(a,b) ((a>b)?(a):(b))
 
@@ -81,12 +81,22 @@ class solveThread_c : public assembler_cb, public thread_c {
 
   private:
 
-    time_t startTime;
+    std::chrono::steady_clock::time_point startTime;
 
   public:
 
-    /* how much time has passed since calling start */
-    unsigned long getTime(void) { return time(0) - startTime; }
+    /* how much time has passed in milliseconds since thread started */
+    unsigned long getTimeMilliseconds(void) {
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - startTime
+      );
+      return duration.count();
+    }
+
+    /* how much time has passed in seconds since thread started */
+    double getTimeSeconds(void) {
+      return getTimeMilliseconds() / 1000.0;
+    }
 
   private:
 

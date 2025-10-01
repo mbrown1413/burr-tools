@@ -2746,9 +2746,9 @@ void mainWindow_c::updateInterface(void) {
 
       unsigned int ut;
       if (pr->usedTimeKnown())
-        ut = pr->getUsedTime() + assmThread->getTime();
+        ut = pr->getUsedTimeSeconds() + assmThread->getTimeSeconds();
       else
-        ut = assmThread->getTime();
+        ut = assmThread->getTimeSeconds();
 
       TimeUsed->value(timeToString(ut));
       if (finished != 0)
@@ -2763,7 +2763,7 @@ void mainWindow_c::updateInterface(void) {
 
       if ((prob < puzzle->getNumberOfProblems()) && puzzle->getProblem(prob)->usedTimeKnown()) {
         problem_c * pr = puzzle->getProblem(prob);
-        TimeUsed->value(timeToString(pr->getUsedTime()));
+        TimeUsed->value(timeToString(pr->getUsedTimeSeconds()));
         TimeUsed->show();
       } else {
         TimeUsed->hide();
