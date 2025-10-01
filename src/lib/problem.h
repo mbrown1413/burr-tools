@@ -151,9 +151,9 @@ private:
   std::string assemblerVersion;
 
   /**
-   * the time used up to get to the current state in the solving progress (in seconds)
+   * the time used up to get to the current state in the solving progress (in milliseconds)
    */
-  unsigned long usedTime;
+  unsigned long usedTimeMilliseconds;
 
   /**
    * number of holes maximally allowed
@@ -415,8 +415,8 @@ public:
   void incNumAssemblies(void) { bt_assert(solveState == SS_SOLVING); numAssemblies++; }
   /** call this for each found solution */
   void incNumSolutions(void) { bt_assert(solveState == SS_SOLVING); numSolutions++; }
-  /** add time used to solve the puzzle (in seconds) the value is added to the already accumulated time. */
-  void addTime(unsigned long time) { bt_assert(solveState == SS_SOLVING); usedTime += time; }
+  /** add time used to solve the puzzle (in milliseconds) the value is added to the already accumulated time. */
+  void addTime(unsigned long milliseconds) { bt_assert(solveState == SS_SOLVING); usedTimeMilliseconds += milliseconds; }
   /** add an assembly as a solution */
   void addSolution(assembly_c * assm);
   /** add an assembly with disassembly information as a solution.
@@ -457,7 +457,9 @@ public:
   /** find out, if we know something about the time for solving the puzzle */
   bool usedTimeKnown(void) const { return solveState != SS_UNSOLVED; }
   /** find out the time used to solve the puzzle up to the current state. Throws an exception when unknown */
-  unsigned long getUsedTime(void) const { bt_assert(solveState != SS_UNSOLVED); return usedTime; }
+  unsigned long getUsedTimeSeconds(void) const { return getUsedTimeMilliseconds() / 1000; }
+  /** like getUsedTimeSeconds, but returns milliseconds */
+  unsigned long getUsedTimeMilliseconds(void) const { bt_assert(solveState != SS_UNSOLVED); return usedTimeMilliseconds; }
   /** get number of solutions that were stored */
   unsigned int getNumberOfSavedSolutions(void) const { return solutions.size(); }
 

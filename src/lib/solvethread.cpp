@@ -28,6 +28,7 @@
 #include "solution.h"
 
 void solveThread_c::run(void){
+  startTime = std::chrono::steady_clock::now();
 
   try {
 
@@ -84,7 +85,7 @@ void solveThread_c::run(void){
 
       action = solveThread_c::ACT_ASSEMBLING;
       assm->assemble(this);
-      puzzle.addTime(time(0)-startTime);
+      puzzle.addTime(getTimeMilliseconds());
 
       if (assm->getFinished() >= 1) {
         action = solveThread_c::ACT_FINISHED;
@@ -94,7 +95,7 @@ void solveThread_c::run(void){
 
     } else {
       action = solveThread_c::ACT_PAUSING;
-      puzzle.addTime(time(0)-startTime);
+      puzzle.addTime(getTimeMilliseconds());
     }
 
   }
@@ -337,7 +338,6 @@ bool solveThread_c::start(bool stop_after_prep) {
 
   stopPressed = false;
   return_after_prep = stop_after_prep;
-  startTime = time(0);
 
   // calculate dropMultiplicator
 
