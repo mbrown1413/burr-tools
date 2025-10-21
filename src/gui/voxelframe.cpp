@@ -1597,6 +1597,11 @@ int voxelFrame_c::handle(int event) {
     rotater->drag(Fl::event_x(), Fl::event_y());
     redraw();
 
+    // Rapid 3D editing mode causes a callback on each drag event
+    if(config.useRapid3d()) {
+      do_callback();
+    }
+
     return 1;
 
   case FL_RELEASE:
