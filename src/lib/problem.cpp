@@ -33,6 +33,7 @@
 
 #include <stdio.h>
 #include <iomanip>
+#include <sstream>
 
 /** internal class of problem storing the grouping information of a shape */
 class group_c {
